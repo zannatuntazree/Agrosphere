@@ -1,178 +1,142 @@
-"use client"
+"use client";
+import React, { useState, useEffect } from "react";
+import { motion } from "motion/react";
+import { GiHolosphere } from "react-icons/gi";
+import { MorphingLoginButton } from "@/app/_components/MorphingLoginButton";
+import { Prosto_One } from "next/font/google";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { GiHolosphere } from "react-icons/gi"
-import { setAuthCookies } from "@/lib/auth"
+const prostoOne = Prosto_One({
+  weight: "400",
+  subsets: ["latin"],
+  display: "swap",
+});
 
-export default function HomePage() {
-  const [isLoading, setIsLoading] = useState(false)
-  const [loginData, setLoginData] = useState({ email: "", password: "" })
-  const [registerData, setRegisterData] = useState({ name: "", email: "", password: "" })
-  const router = useRouter()
+const AgrosphereLanding = () => {
+  const [mounted, setMounted] = useState(false);
 
-  const handleLogin = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
-    try {
-      const response = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(loginData),
-        credentials: "include", // Important: include cookies
-      })
+  const heroText = "🌱 AgroSphere – Your Smart Farming Companion";
+  const subText =
+    "Track expenses, manage lands, connect with nearby farmers, and plan your harvests — all in one platform.";
+  const logoText = "Agrosphere";
 
-      const result = await response.json()
-
-      if (result.success && result.user) {
-        // Set auth cookies and localStorage
-        setAuthCookies(result.user)
-
-        // Small delay to ensure cookies are set
-        setTimeout(() => {
-          router.push("/dashboard")
-        }, 100)
-      } else {
-        alert(result.message || "Login failed")
-      }
-    } catch (error) {
-      console.error("Login error:", error)
-      alert("Login failed. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleRegister = async (e) => {
-    e.preventDefault()
-    setIsLoading(true)
-
-    try {
-      const response = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(registerData),
-      })
-
-      const result = await response.json()
-
-      if (result.success) {
-        alert("Registration successful! Please login.")
-        setRegisterData({ name: "", email: "", password: "" })
-      } else {
-        alert(result.message)
-      }
-    } catch (error) {
-      console.error("Registration error:", error)
-      alert("Registration failed. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
+  if (!mounted) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <div className="flex items-center justify-center gap-2 mb-4">
-            <GiHolosphere className="h-12 w-12 text-green-600" />
-            <span className="text-3xl font-bold">
-              Agr
-              <GiHolosphere className="inline h-8 w-8 text-green-600 mx-1" />
-              sphere
-            </span>
+    <div className="min-h-screen w-full relative overflow-hidden">
+      {/* Mesh Gradient Background */}
+      <div
+        className="fixed inset-0 w-full h-full"
+        style={{
+          backgroundColor: "#cdfadb",
+          backgroundImage: `
+            radial-gradient(at 79% 25%, #cdfadb 0%, transparent 60%), 
+            radial-gradient(at 20% 59%, #f6fdc3 0%, transparent 50%), 
+            radial-gradient(at 47% 39%, #ffcf96 0%, transparent 40%), 
+            radial-gradient(at 74% 40%, #ff8080 0%, transparent 30%)
+          `,
+        }}
+      />
+
+      {/* Content Container */}
+      <div className="relative z-10 w-full max-w-[80vw] mx-auto min-h-screen flex flex-col">
+        {/* Navigation */}
+        <nav className="w-full max-w-[70vw] mx-auto mt-6 px-6 py-4 bg-blue-800/60 backdrop-blur-md rounded-full border border-sky-600/80 shadow-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <GiHolosphere
+                className={`h-12 w-12 text-green-400 ${prostoOne.className}`}
+              />
+              <span
+                className={`text-2xl font-bold text-white ${prostoOne.className}`}
+              >
+                Agrosphere
+              </span>
+            </div>
+            <button
+              className={`px-6 py-2 text-white font-medium hover:bg-emerald-600/20 rounded-full transition-all duration-300 ${prostoOne.className}`}
+            >
+              About Us
+            </button>
           </div>
-          <p className="text-muted-foreground">Your comprehensive agriculture management platform</p>
+        </nav>
+
+        {/* Main Content */}
+        <div className="flex-1 flex flex-col items-center justify-center px-6">
+          {/* Hero Section */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.5, duration: 0.8, ease: "easeOut" }}
+            className="text-center max-w-4xl mx-auto"
+          >
+            <h1
+              className={`text-4xl md:text-5xl font-bold text-gray-800 mb-6 leading-tight ${prostoOne.className}`}
+            >
+              {heroText}
+            </h1>
+            <p
+              className={`text-xl md:text-2xl text-gray-700 leading-relaxed ${prostoOne.className}`}
+            >
+              {subText}
+            </p>
+          </motion.div>
+
+          {/* Login Button */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 2.5, duration: 0.6, ease: "easeOut" }}
+            className="mt-12"
+          >
+            <MorphingLoginButton />
+          </motion.div>
         </div>
+      </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="login" className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
-              </TabsList>
+      {/* Large Logo at Bottom */}
+      <div className="fixed bottom-0 left-0 w-full overflow-hidden z-0">
+        <div className="flex items-center justify-center gap-6 py-8">
+          {/* Icon with shadow */}
+          <div className="overflow-hidden">
+            <motion.div
+              initial={{ y: 200, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.8, ease: "easeOut" }}
+              className="overflow-hidden"
+            >
+              <GiHolosphere className="h-48 w-48 text-green-400 drop-shadow-[0_5px_15px_rgba(34,197,94,0.5)]" />
+            </motion.div>
+          </div>
 
-              <TabsContent value="login">
-                <form onSubmit={handleLogin} className="space-y-4">
-                  <div>
-                    <Label htmlFor="login-email">Email</Label>
-                    <Input
-                      id="login-email"
-                      type="email"
-                      value={loginData.email}
-                      onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="login-password">Password</Label>
-                    <Input
-                      id="login-password"
-                      type="password"
-                      value={loginData.password}
-                      onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Signing in..." : "Sign In"}
-                  </Button>
-                </form>
-              </TabsContent>
+          {/* Text with shadow */}
+          <div
+            className={`flex text-9xl font-bold text-black overflow-hidden leading-[1.15]  ${prostoOne.className}`}
+          >
+            {logoText.split("").map((letter, index) => (
+              <motion.span
+                key={index}
+                initial={{ y: 300, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{
+                  delay: 1.2 + index * 0.08,
+                  duration: 0.6,
+                  ease: "easeOut",
+                }}
+                className="inline-block overflow-hidden"
 
-              <TabsContent value="register">
-                <form onSubmit={handleRegister} className="space-y-4">
-                  <div>
-                    <Label htmlFor="register-name">Name</Label>
-                    <Input
-                      id="register-name"
-                      type="text"
-                      value={registerData.name}
-                      onChange={(e) => setRegisterData({ ...registerData, name: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="register-email">Email</Label>
-                    <Input
-                      id="register-email"
-                      type="email"
-                      value={registerData.email}
-                      onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="register-password">Password</Label>
-                    <Input
-                      id="register-password"
-                      type="password"
-                      value={registerData.password}
-                      onChange={(e) => setRegisterData({ ...registerData, password: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={isLoading}>
-                    {isLoading ? "Creating account..." : "Create Account"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+              >
+                {letter}
+              </motion.span>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
-  )
-}
+  );
+};
+
+export default AgrosphereLanding;

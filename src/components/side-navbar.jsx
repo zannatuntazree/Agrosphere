@@ -148,7 +148,7 @@ export default function SideNavbar({ isOpen, onClose }) {
             {activeIndex !== -1 && (
               <motion.div
                 layoutId="desktop-active-bg"
-                className="absolute bg-primary rounded-lg z-0"
+                className="absolute bg-primary rounded-full -translate-y-1 z-0"
                 initial={false}
                 animate={{
                   top: `${getBackgroundPosition(activeIndex)}px`,

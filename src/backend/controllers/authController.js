@@ -63,11 +63,6 @@ export const authController = {
         throw new Error("Invalid email or password")
       }
 
-      // Check if user is banned
-      if (user.is_banned) {
-        throw new Error("Your account has been banned")
-      }
-
       // Verify password
       const isPasswordValid = await bcrypt.compare(password, user.password)
       if (!isPasswordValid) {

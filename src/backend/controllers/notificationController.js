@@ -27,7 +27,7 @@ export const notificationController = {
   // Get user notifications
   async getUserNotifications(userId) {
     try {
-      // First, delete old notifications (but don't fail if this fails)
+
       try {
         await notificationModel.deleteOldNotifications()
       } catch (cleanupError) {

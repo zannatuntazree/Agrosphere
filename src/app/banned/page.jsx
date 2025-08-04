@@ -30,17 +30,6 @@ export default function BannedPage() {
             is an error, please contact our support team.
           </p>
 
-          {/* Contact Info */}
-          <div className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4 mb-6">
-            <p className="text-sm text-gray-600 dark:text-gray-400">
-              <strong>Need help?</strong>
-              <br />
-              Contact us at:{" "}
-              <a href="mailto:support@agrosphere.com" className="text-green-600 hover:text-green-700">
-                support@agrosphere.com
-              </a>
-            </p>
-          </div>
 
           {/* Go Home Button */}
           <button

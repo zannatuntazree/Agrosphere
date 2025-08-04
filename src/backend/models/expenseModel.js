@@ -121,7 +121,7 @@ export const expenseModel = {
   // Get last 30 transactions
   async getLast30Transactions(userId) {
     const result = await sql`
-      SELECT id, type, category, amount, description, date, created_at
+      SELECT id, type, category, amount, date, created_at
       FROM expenses_earnings 
       WHERE user_id = ${userId}
       ORDER BY created_at DESC

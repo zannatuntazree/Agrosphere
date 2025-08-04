@@ -1,550 +1,322 @@
+// @ts-nocheck
 "use client"
-import { useState, useEffect, useRef } from "react"
-import { FiEdit, FiMail, FiPhone, FiMapPin, FiCalendar, FiUser, FiCamera, FiLoader } from "react-icons/fi"
+import { useState, useEffect } from "react"
+import { FiEdit, FiMail, FiPhone, FiMapPin, FiCalendar, FiUser, FiMap, FiLayers, FiMessageSquare,  FiTrendingUp } from "react-icons/fi"
+import { FaSeedling } from "react-icons/fa";
+import { Skeleton } from "@/components/ui/skeleton"
+import EditProfileDialog from "./_components/editprofile"
+import Image from "next/image";
 
-// Card Components
-const Card = ({ children, className = "" }) => (
-  <div
-    className={`bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm ${className}`}
-  >
-    {children}
-  </div>
-)
-
-const CardHeader = ({ children, className = "" }) => <div className={`p-6 ${className}`}>{children}</div>
-
-const CardContent = ({ children, className = "" }) => <div className={`p-6 pt-0 ${className}`}>{children}</div>
-
-const CardTitle = ({ children, className = "" }) => (
-  <h3 className={`text-2xl font-semibold leading-none tracking-tight text-gray-900 dark:text-white ${className}`}>
-    {children}
-  </h3>
-)
-
-const CardDescription = ({ children, className = "" }) => (
-  <p className={`text-sm text-gray-600 dark:text-gray-400 ${className}`}>{children}</p>
-)
-
-// Button Component
-const Button = ({
-  children,
-  onClick,
-  variant = "default",
-  size = "default",
-  disabled = false,
-  type = "button",
-  className = "",
-}) => {
-  const baseClasses =
-    "inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 disabled:pointer-events-none disabled:opacity-50"
-
-  const variants = {
-    default: "bg-blue-600 text-white hover:bg-blue-700",
-    outline: "border border-gray-300 bg-white hover:bg-gray-50",
-    secondary: "bg-gray-100 dark:bg-gray-700 text-gray-900 hover:bg-gray-200",
-  }
-
-  const sizes = {
-    default: "h-10 px-4 py-2",
-    icon: "h-10 w-10",
-  }
-
-  return (
-    <button
-      // @ts-ignore
-      type={type}
-      onClick={onClick}
-      disabled={disabled}
-      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${className}`}
-    >
-      {children}
-    </button>
-  )
-}
-
-// Avatar Component
-const Avatar = ({ children, className = "" }) => (
-  <div className={`relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full ${className}`}>{children}</div>
-)
-
-const AvatarImage = ({ src, alt }) =>
-  src ? <img className="aspect-square h-full w-full" src={src || "/placeholder.svg"} alt={alt} /> : null
-
-const AvatarFallback = ({ children, className = "" }) => (
-  <div
-    className={`flex h-full w-full items-center justify-center rounded-full bg-gray-100 dark:bg-gray-700 ${className}`}
-  >
-    {children}
-  </div>
-)
-
-// Badge Component
-const Badge = ({ children, variant = "default", className = "" }) => {
-  const variants = {
-    default: "bg-blue-100 text-blue-800",
-    secondary: "bg-gray-100 dark:bg-gray-700 text-gray-800",
-  }
-
-  return (
-    <div
-      className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${variants[variant]} ${className}`}
-    >
-      {children}
-    </div>
-  )
-}
-
-// Input Components
-const Input = ({ id, name, value, onChange, type = "text", required = false, placeholder = "", className = "" }) => (
-  <input
-    id={id}
-    name={name}
-    type={type}
-    value={value}
-    onChange={onChange}
-    required={required}
-    placeholder={placeholder}
-    className={`flex h-10 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-  />
-)
-
-const Textarea = ({ id, name, value, onChange, rows = 3, placeholder = "", className = "" }) => (
-  <textarea
-    id={id}
-    name={name}
-    rows={rows}
-    value={value}
-    onChange={onChange}
-    placeholder={placeholder}
-    className={`flex min-h-[80px] w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
-  />
-)
-
-const Label = ({ htmlFor, children, className = "" }) => (
-  <label
-    htmlFor={htmlFor}
-    className={`text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 ${className}`}
-  >
-    {children}
-  </label>
-)
-
-// Dialog Components
-const Dialog = ({ open, onOpenChange, children }) => {
-  if (!open) return null
-
-  return (
-    <div className="fixed inset-0 z-50">
-      <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
-      <div className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 p-4">
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg">{children}</div>
-      </div>
-    </div>
-  )
-}
-
-const DialogContent = ({ children, className = "" }) => (
-  <div className={`max-h-[90vh] overflow-y-auto dark:text-gray-100 ${className}`}>{children}</div>
-)
-
-const DialogHeader = ({ children }) => <div className="p-6 pb-4">{children}</div>
-
-const DialogTitle = ({ children }) => (
-  <h2 className="text-lg font-semibold leading-none tracking-tight dark:text-gray-100">{children}</h2>
-)
-
-const DialogDescription = ({ children }) => (
-  <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">{children}</p>
-)
-
-const DialogFooter = ({ children }) => <div className="flex justify-end gap-2 p-6 pt-0">{children}</div>
-
-// Edit Profile Dialog Component
-const EditProfileDialog = ({ isOpen, onClose, user, onProfileUpdate }) => {
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    address: "",
-    city: "",
-    country: "",
-    age: "",
-    preferred_crops: "",
-  })
-  const [selectedImage, setSelectedImage] = useState(null)
-  const [imagePreview, setImagePreview] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const fileInputRef = useRef(null)
-
-  useEffect(() => {
-    if (user && isOpen) {
-      setFormData({
-        name: user.name || "",
-        phone: user.phone || "",
-        address: user.address || "",
-        city: user.city || "",
-        country: user.country || "",
-        age: user.age ? user.age.toString() : "",
-        preferred_crops: user.preferred_crops ? user.preferred_crops.join(", ") : "",
-      })
-      setImagePreview(user.profile_pic || "")
-      setSelectedImage(null)
-    }
-  }, [user, isOpen])
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }))
-  }
-
-  const handleImageSelect = (e) => {
-    const file = e.target.files[0]
-    if (file) {
-      setSelectedImage(file)
-      const reader = new FileReader()
-      reader.onload = (e) => {
-        // @ts-ignore
-        setImagePreview(e.target.result)
-      }
-      reader.readAsDataURL(file)
-    }
-  }
-
-  const handleSubmit = async () => {
-    setIsLoading(true)
-
-    try {
-      // Upload image if selected
-      if (selectedImage) {
-        const imageFormData = new FormData()
-        imageFormData.append("image", selectedImage)
-
-        const imageResponse = await fetch("/api/user/upload-image", {
-          method: "POST",
-          body: imageFormData,
-          credentials: "include",
-        })
-
-        if (!imageResponse.ok) {
-          throw new Error("Failed to upload image")
-        }
-      }
-
-      // Update profile data
-      const profileData = {
-        ...formData,
-        age: formData.age ? Number.parseInt(formData.age) : null,
-        preferred_crops: formData.preferred_crops
-          ? formData.preferred_crops
-              .split(",")
-              .map((crop) => crop.trim())
-              .filter(Boolean)
-          : [],
-      }
-
-      const response = await fetch("/api/user/profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(profileData),
-        credentials: "include",
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to update profile")
-      }
-
-      const result = await response.json()
-      if (result.success) {
-        onProfileUpdate(result.user)
-        onClose()
-      } else {
-        throw new Error(result.message || "Failed to update profile")
-      }
-    } catch (error) {
-      console.error("Error updating profile:", error)
-      alert("Failed to update profile. Please try again.")
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
-  const handleClose = () => {
-    setSelectedImage(null)
-    setImagePreview(user?.profile_pic || "")
-    onClose()
-  }
-
-  return (
-    <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
-        <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-          <DialogDescription>Update your profile information and profile picture.</DialogDescription>
-        </DialogHeader>
-
-        <div className="space-y-4 p-6 pt-0">
-          {/* Profile Picture */}
-          <div className="flex flex-col items-center space-y-4">
-            <div className="relative">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={imagePreview || "/placeholder.svg"} alt="Profile" />
-                <AvatarFallback className="text-lg">{formData.name?.charAt(0)?.toUpperCase() || "U"}</AvatarFallback>
-              </Avatar>
-              <Button
-                type="button"
-                size="icon"
-                variant="secondary"
-                className="absolute -bottom-2 -right-2 rounded-full"
-                onClick={() => fileInputRef.current?.click()}
-              >
-                <FiCamera className="h-4 w-4" />
-              </Button>
-            </div>
-            <input ref={fileInputRef} type="file" accept="image/*" onChange={handleImageSelect} className="hidden" />
-          </div>
-
-          {/* Form Fields */}
-          <div className="grid grid-cols-1 gap-4">
-            <div>
-              <Label htmlFor="name">Name *</Label>
-              <Input id="name" name="name" value={formData.name} onChange={handleInputChange} required />
-            </div>
-
-            <div>
-              <Label htmlFor="phone">Phone</Label>
-              <Input id="phone" name="phone" value={formData.phone} onChange={handleInputChange} />
-            </div>
-
-            <div>
-              <Label htmlFor="age">Age</Label>
-              <Input id="age" name="age" type="number" value={formData.age} onChange={handleInputChange} />
-            </div>
-
-            <div>
-              <Label htmlFor="address">Address</Label>
-              <Textarea id="address" name="address" value={formData.address} onChange={handleInputChange} rows={2} />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="city">City</Label>
-                <Input id="city" name="city" value={formData.city} onChange={handleInputChange} />
-              </div>
-              <div>
-                <Label htmlFor="country">Country</Label>
-                <Input id="country" name="country" value={formData.country} onChange={handleInputChange} />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="preferred_crops">Preferred Crops</Label>
-              <Input
-                id="preferred_crops"
-                name="preferred_crops"
-                value={formData.preferred_crops}
-                onChange={handleInputChange}
-                placeholder="e.g., Rice, Wheat, Corn (comma separated)"
-              />
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button type="button" className="dark:text-black" variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button onClick={handleSubmit} disabled={isLoading}>
-              {isLoading ? (
-                <>
-                  <FiLoader className="mr-2 h-4 w-4 animate-spin" />
-                  Updating...
-                </>
-              ) : (
-                "Update Profile"
-              )}
-            </Button>
-          </DialogFooter>
-        </div>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-// Main Profile Page Component
 export default function ProfilePage() {
   const [user, setUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
 
   useEffect(() => {
+    const fetchUserProfile = async () => {
+      try {
+        const response = await fetch("/api/user/profile", { credentials: "include" })
+        if (response.ok) {
+          const result = await response.json()
+          if (result.success) {
+            setUser(result.user)
+          } else {
+            console.error("API error fetching profile:", result.message)
+            setUser(null)
+          }
+        } else {
+          console.error("HTTP error fetching profile:", response.status)
+          setUser(null)
+        }
+      } catch (error) {
+        console.error("Network error fetching profile:", error)
+        setUser(null)
+      } finally {
+        setIsLoading(false)
+      }
+    }
     fetchUserProfile()
   }, [])
 
-  const fetchUserProfile = async () => {
-    try {
-      const response = await fetch("/api/user/profile", {
-        credentials: "include",
-      })
-      if (response.ok) {
-        const result = await response.json()
-        if (result.success) {
-          setUser(result.user)
-        } else {
-          console.error("Failed to fetch profile:", result.message)
-        }
-      } else {
-        console.error("Failed to fetch profile")
-      }
-    } catch (error) {
-      console.error("Error fetching profile:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   const handleProfileUpdate = (updatedUser) => {
     setUser(updatedUser)
-    // Update localStorage
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(updatedUser))
     }
-  }
-
-  const handleEditClick = () => {
-    console.log("Edit button clicked") // Debug log
-    setIsEditDialogOpen(true)
-  }
-
-  const handleDialogClose = () => {
-    console.log("Dialog closing") // Debug log
-    setIsEditDialogOpen(false)
+    // The toast is now handled by the Dialog component
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
+      <div className="max-w-7xl mx-auto p-4 sm:p-6 min-h-screen">
+        {/* Profile section skeleton - full width */}
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-slate-800 dark:to-slate-900 rounded-xl p-6 border border-green-200 dark:border-slate-700 shadow-lg dark:shadow-2xl mb-6">
+          <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
+            <Skeleton className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg" />
+            <div className="text-center sm:text-left flex-1">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                <div className="space-y-2">
+                  <Skeleton className="h-8 w-48 mx-auto sm:mx-0" />
+                  <Skeleton className="h-4 w-64 mx-auto sm:mx-0" />
+                  <Skeleton className="h-4 w-40 mx-auto sm:mx-0" />
+                </div>
+                <Skeleton className="h-10 w-32 mt-4 sm:mt-0" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="space-y-4 mb-6">
+            <div className="space-y-4">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <Skeleton className="w-8 h-8 rounded-lg" />
+                  <div className="space-y-1">
+                    <Skeleton className="h-3 w-16" />
+                    <Skeleton className="h-4 w-24" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Stats cards skeleton - 2x2 grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
+              <div className="flex items-center gap-3 mb-4">
+                <Skeleton className="w-8 h-8 rounded-lg" />
+                <Skeleton className="h-5 w-24" />
+              </div>
+              <div className="text-center">
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <Skeleton className="h-8 w-16 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-20 mx-auto" />
+                  </div>
+                  <div>
+                    <Skeleton className="h-8 w-16 mx-auto mb-2" />
+                    <Skeleton className="h-4 w-20 mx-auto" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
       </div>
     )
   }
 
   if (!user) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <p className="text-gray-600 dark:text-gray-400">User not found</p>
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-xl text-gray-600 dark:text-gray-400">Could not load user profile.</p>
+        <p className="text-gray-500">Please try refreshing the page.</p>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6 p-6 bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Profile</h1>
-          <p className="text-gray-600 dark:text-gray-400">Manage your profile information and preferences</p>
+    <div className="max-w-7xl mx-auto p-4 sm:p-6 min-h-screen">
+      {/* Profile Section - Full Width */}
+      <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-slate-800 dark:to-slate-900 rounded-xl p-6 border border-green-200 dark:border-slate-700 shadow-lg dark:shadow-2xl mb-6">
+        {/* Profile Header */}
+        <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
+          <div className="relative flex h-24 w-24 sm:h-32 sm:w-32 shrink-0 overflow-hidden rounded-full shadow-lg">
+            {user.profile_pic ? (
+              <Image
+                  src={user.profile_pic}
+                  alt={user.name}
+                  width={200} 
+                  height={200}
+                  className="aspect-square h-full w-full object-cover"
+                />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-green-600 text-white">
+                <span className="text-3xl font-bold">{user.name?.charAt(0)?.toUpperCase()}</span>
+              </div>
+            )}
+          </div>
+          <div className="text-center sm:text-left flex-1">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{user.name}</h2>
+                <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 text-gray-700 dark:text-gray-300">
+                  <FiMail className="h-4 w-4" />
+                  <span>{user.email}</span>
+                </div>
+                <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                  <FiCalendar className="h-4 w-4" />
+                  <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsEditDialogOpen(true)} 
+                className="inline-flex items-center justify-center rounded-full text-sm font-medium h-10 px-4 py-2 bg-green-600 text-white  hover:-translate-y-1 cursor-pointer transition-all duration-300 mt-4 sm:mt-0 shadow-md hover:shadow-lg"
+              >
+                <FiEdit className="mr-2 h-4 w-4" /> Edit Profile
+              </button>
+            </div>
+          </div>
         </div>
-        <Button onClick={handleEditClick}>
-          <FiEdit className="mr-2 h-4 w-4" />
-          Edit Profile
-        </Button>
-      </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Profile Card */}
-        <Card className="lg:col-span-1">
-          <CardHeader className="text-center">
-            <div className="flex justify-center mb-4">
-              <Avatar className="w-24 h-24">
-                <AvatarImage src={user.profile_pic || "/placeholder.svg"} alt={user.name} />
-                <AvatarFallback className="text-2xl">{user.name?.charAt(0)?.toUpperCase()}</AvatarFallback>
-              </Avatar>
-            </div>
-            <CardTitle className="text-xl">{user.name}</CardTitle>
-            <CardDescription className="flex items-center justify-center gap-2">
-              <FiMail className="h-4 w-4" />
-              {user.email}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
+        {/* Personal Information */}
+        <div className="mb-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-8 gap-y-6">
             {user.phone && (
-              <div className="flex items-center gap-2 text-sm">
-                <FiPhone className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                <span>{user.phone}</span>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg shadow-sm">
+                  <FiPhone className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Phone</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{user.phone}</p>
+                </div>
               </div>
             )}
+            
             {user.age && (
-              <div className="flex items-center gap-2 text-sm">
-                <FiUser className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                <span>{user.age} years old</span>
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg shadow-sm">
+                  <FiUser className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Age</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{user.age} years old</p>
+                </div>
               </div>
             )}
+            
             {(user.city || user.country) && (
-              <div className="flex items-center gap-2 text-sm">
-                <FiMapPin className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-                <span>{[user.city, user.country].filter(Boolean).join(", ")}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-2 text-sm">
-              <FiCalendar className="h-4 w-4 text-gray-600 dark:text-gray-400" />
-              <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Details Card */}
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Profile Details</CardTitle>
-            <CardDescription>Your personal information and preferences</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {user.address && (
-              <div>
-                <h3 className="font-medium mb-2">Address</h3>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{user.address}</p>
-              </div>
-            )}
-
-            {user.preferred_crops && user.preferred_crops.length > 0 && (
-              <div>
-                <h3 className="font-medium mb-2">Preferred Crops</h3>
-                <div className="flex flex-wrap gap-2">
-                  {user.preferred_crops.map((crop, index) => (
-                    <Badge key={index} variant="secondary">
-                      {crop}
-                    </Badge>
-                  ))}
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg shadow-sm">
+                  <FiMapPin className="h-4 w-4 text-green-600 dark:text-green-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Location</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{[user.city, user.country].filter(Boolean).join(", ")}</p>
                 </div>
               </div>
             )}
 
-            {!user.phone && !user.address && !user.preferred_crops?.length && (
-              <div className="text-center py-8">
-                <p className="text-gray-600 dark:text-gray-400 mb-4">
-                  Complete your profile to get personalized recommendations
-                </p>
-                <Button variant="outline" onClick={handleEditClick}>
-                  <FiEdit className="mr-2 h-4 w-4" />
-                  Add Information
-                </Button>
+            {user.address && (
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg shadow-sm">
+                  <FiMapPin className="h-4 w-4 text-orange-600 dark:text-orange-400" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Address</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{user.address}</p>
+                </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+            
+            {user.preferred_crops?.length > 0 && (
+              <div className="flex items-start gap-3 lg:col-span-2">
+                <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg shadow-sm">
+                  <FaSeedling className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">Preferred Crops</p>
+                  <div className="flex flex-wrap gap-2">
+                    {user.preferred_crops.map((crop, i) => (
+                      <div key={i} className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-200 shadow-sm">
+                        {crop}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
-      {/* Edit Profile Dialog */}
-      {user && (
-        <EditProfileDialog
-          isOpen={isEditDialogOpen}
-          onClose={handleDialogClose}
-          user={user}
-          onProfileUpdate={handleProfileUpdate}
-        />
-      )}
+      {/* Stats Cards - 2x2 Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Land Statistics */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg shadow-sm">
+              <FiMap className="h-5 w-5 text-green-600 dark:text-green-400" />
+            </div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Land Stats</h3>
+          </div>
+          
+          <div className="space-y-3">
+            <div className="grid grid-cols-2 gap-3">
+              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg shadow-sm">
+                <p className="text-2xl font-bold text-green-600">{user.landStats?.totalLands || 0}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Properties</p>
+              </div>
+              
+              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg shadow-sm">
+                <FiLayers className="mx-auto mb-1 h-4 w-4 text-blue-600" />
+                <p className="text-xl font-bold text-blue-600">{user.landStats?.totalArea || "0.0"}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Total Area (acres)</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Forum Statistics */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg shadow-sm">
+              <FiMessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+            </div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Forum Stats</h3>
+          </div>
+          
+          <div className="text-center py-6">
+            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm">
+              <FiMessageSquare className="h-6 w-6 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Will be added later</p>
+          </div>
+        </div>
+
+        {/* Current Season Crop */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg shadow-sm">
+              <FaSeedling className="h-5 w-5 text-orange-600 dark:text-orange-400" />
+            </div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Current Season Crops</h3>
+          </div>
+          
+          <div className="text-center py-6">
+            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm">
+              <FaSeedling className="h-6 w-6 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Will be added later</p>
+          </div>
+        </div>
+
+        {/* Productivity Statistics - New Stats Card */}
+        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg shadow-sm">
+              <FiTrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+            </div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">Productivity Stats</h3>
+          </div>
+          
+          <div className="text-center py-6">
+            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm">
+              <FiTrendingUp className="h-6 w-6 text-gray-400" />
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">Will be added later</p>
+          </div>
+        </div>
+      </div>
+
+      <EditProfileDialog 
+        isOpen={isEditDialogOpen} 
+        onClose={() => setIsEditDialogOpen(false)} 
+        user={user} 
+        onProfileUpdate={handleProfileUpdate} 
+      />
     </div>
   )
 }

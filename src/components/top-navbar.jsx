@@ -5,6 +5,10 @@ import { GiHolosphere } from "react-icons/gi"
 import { FiSun, FiMoon, FiMenu, FiLogOut } from "react-icons/fi"
 import { removeAuthCookies } from "@/lib/auth"
 import { useRouter } from "next/navigation"
+import { Prosto_One } from "next/font/google"
+import { cn } from "@/lib/utils"
+
+const inter = Prosto_One({ subsets: ["latin"] , weight: "400" })
 
 export default function TopNavbar({ onMenuClick }) {
   const { theme, setTheme } = useTheme()
@@ -17,14 +21,11 @@ export default function TopNavbar({ onMenuClick }) {
         credentials: "include",
       })
 
-      // Always clear local auth data regardless of server response
       removeAuthCookies()
 
-      // Redirect to home page
       router.push("/")
     } catch (error) {
       console.error("Logout error:", error)
-      // Still clear local data and redirect on error
       removeAuthCookies()
       router.push("/")
     }
@@ -49,9 +50,9 @@ export default function TopNavbar({ onMenuClick }) {
           {/* Logo */}
           <div className="flex items-center gap-2">
             <GiHolosphere className="h-8 w-8 text-green-600" />
-            <span className="text-xl font-bold">
-              Agr
-              <GiHolosphere className="inline h-6 w-6 text-green-600 mx-0.5" />
+            <span className={cn("text-3xl font-bold", inter.className)}>
+              Agro
+              {/* <GiHolosphere className="inline -ml-[1px] -mr-[1px] h-6 w-6 text-green-600 mx-0.5" /> */}
               sphere
             </span>
           </div>
@@ -72,7 +73,7 @@ export default function TopNavbar({ onMenuClick }) {
             variant="ghost" 
             size="sm" 
             onClick={handleLogout} 
-            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950"
+            className="flex items-center gap-2 text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950 cursor-pointer"
           >
             <FiLogOut className="h-4 w-4" />
             Logout

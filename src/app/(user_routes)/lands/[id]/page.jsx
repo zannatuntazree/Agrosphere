@@ -1,28 +1,185 @@
 "use client"
 
-// @ts-ignore
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
-import { FiArrowLeft, FiMapPin, FiMap } from "react-icons/fi"
+import Image from "next/image"
+import { FiArrowLeft, FiMapPin, FiMap, FiInfo, FiTag } from "react-icons/fi"
+import { FaSeedling, FaChartLine } from "react-icons/fa"
+import { Skeleton } from "@/components/ui/skeleton"
+
+// Skeleton loader for the entire page
+const PageSkeleton = () => (
+  <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
+    {/* Header Skeleton */}
+    <div className="flex items-center gap-4">
+      <Skeleton className="h-9 w-9 rounded-lg" />
+      <div>
+        <Skeleton className="h-7 w-48 mb-2" />
+        <Skeleton className="h-4 w-64" />
+      </div>
+    </div>
+
+    {/* Top Grid Skeleton */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Left Column Skeleton */}
+      <div className="md:col-span-1 space-y-6">
+        <Skeleton className="aspect-square w-full rounded-lg" />
+        <Skeleton className="h-11 w-full rounded-lg" />
+      </div>
+      {/* Right Column Skeleton */}
+      <div className="md:col-span-2">
+        <div className="p-6 border rounded-lg space-y-6 h-full">
+            <Skeleton className="h-6 w-40 mb-2" />
+            <Skeleton className="h-4 w-full" />
+            <Skeleton className="h-4 w-5/6" />
+            <Skeleton className="h-4 w-full mb-4" />
+            <div className="flex flex-wrap gap-2">
+                <Skeleton className="h-6 w-20 rounded-full" />
+                <Skeleton className="h-6 w-24 rounded-full" />
+            </div>
+        </div>
+      </div>
+    </div>
+
+    {/* Bottom Full-Width Skeletons */}
+    <div className="p-6 border rounded-lg">
+      <Skeleton className="h-6 w-40 mb-4" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+        {Array.from({ length: 8 }).map((_, i) => (
+          <Skeleton key={i} className="h-16 w-full rounded-lg" />
+        ))}
+      </div>
+    </div>
+    <div className="p-6 border rounded-lg">
+        <Skeleton className="h-7 w-1/2" />
+    </div>
+  </div>
+);
+
+// Crop emoji mapping
+const cropEmojis = {
+  // Grains and Cereals
+  "Rice": "🍚",
+  "Boro Rice": "🍚",
+  "Aman Rice": "🍚",
+  "Deepwater Aman": "🍚",
+  "Floating Rice": "🍚",
+  "BRRI dhan47": "🍚",
+  "BRRI dhan73": "🍚",
+  "Salt-tolerant Rice": "🍚",
+  "Wheat": "🌾",
+  "Maize": "🌽",
+  "Fodder Maize": "🌽",
+  "Barley": "🌾",
+  
+  // Vegetables
+  "Potato": "🥔",
+  "Sweet Potato": "🍠",
+  "Onion": "🧅",
+  "Garlic": "🧄",
+  "Chili": "🌶️",
+  "Spinach": "🥬",
+  "Vegetables": "🥬",
+  "Seasonal Vegetables": "🥬",
+  "Floating Vegetables": "🥬",
+  "Aqua Vegetables": "🥬",
+  "Kachu": "🥔",
+  "Pani Shak": "🥬",
+  
+  // Fruits
+  "Watermelon": "🍉",
+  "Pumpkin": "🎃",
+  
+  // Legumes and Pulses
+  "Groundnut": "🥜",
+  "Pulses": "🫘",
+  "Khesari": "🫘",
+  
+  // Spices and Herbs
+  "Turmeric": "🟡",
+  "Mustard": "🟡",
+  
+  // Industrial Crops
+  "Jute": "🌾",
+  "Sunflower": "🌻",
+  "Sesame": "🌰",
+  
+  // Aquatic Plants
+  "Lotus": "🪷",
+  "Water Chestnut": "🌰",
+  
+  // Fodder Crops
+  "Napier Grass": "🌱",
+  "Lucerne": "🌱",
+  
+  // Others
+  "Fish": "🐟",
+  "Shrimp": "🦐",
+  "Duck Farming": "🦆",
+  "Grazing": "🐄",
+  "Consult local agriculture officer": "📋"
+};
+
+// Crop suggestions data (remains unchanged)
+const cropSuggestions = {
+  "Ucha Jomi": {
+    "Doash Mati": ["Mustard", "Wheat", "Jute", "Vegetables"],
+    "Balu Mati": ["Groundnut", "Sweet Potato", "Watermelon"],
+    "Kalo Mati": ["Chili", "Potato", "Garlic", "Spinach"],
+    others: ["Pulses", "Sunflower", "Seasonal Vegetables"],
+  },
+  "Moddhom Jomi": {
+    "Doash Mati": ["Boro Rice", "Aman Rice", "Mustard", "Onion"],
+    "Dona Mati": ["Aman Rice", "Vegetables", "Turmeric"],
+    "Kalo Mati": ["Wheat", "Garlic", "Spinach"],
+    others: ["Boro Rice", "Vegetables", "Jute"],
+  },
+  "Nicher Jomi": {
+    "Dona Mati": ["Deepwater Aman", "Boro Rice", "Jute"],
+    "Pank Mati": ["Aman Rice", "Floating Vegetables", "Lotus", "Fish"],
+    others: ["Boro Rice", "Water Chestnut", "Fish"],
+  },
+  "Ati Nicher Jomi": {
+    "Pank Mati": ["Floating Rice", "Kachu", "Fish", "Lotus"],
+    "Teep Mati": ["Water Chestnut", "Fish", "Pani Shak"],
+    others: ["Kachu", "Fish", "Aqua Vegetables"],
+  },
+  Char: {
+    "Balu Mati": ["Pumpkin", "Maize", "Watermelon", "Sesame"],
+    "Doash Mati": ["Mustard", "Vegetables", "Sunflower", "Groundnut"],
+    others: ["Maize", "Sesame", "Khesari"],
+  },
+  Haor: {
+    "Dona Mati": ["Boro Rice", "Fish"],
+    "Pank Mati": ["Kachu", "Fish", "Duck Farming"],
+    others: ["Boro Rice", "Onion", "Fish"],
+  },
+  "Upokulio Jomi": {
+    "Lona Mati": ["BRRI dhan47", "BRRI dhan73", "Khesari", "Sunflower", "Shrimp"],
+    others: ["Salt-tolerant Rice", "Barley", "Shrimp"],
+  },
+  Charonabhumi: {
+    "Doash Mati": ["Napier Grass", "Lucerne", "Fodder Maize"],
+    others: ["Grazing"],
+  },
+  Others: {
+    others: ["Consult local agriculture officer"],
+  },
+}
 
 export default function LandDetailsPage() {
   const params = useParams()
   const [land, setLand] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  useEffect(() => {
-    if (params.id) {
-      fetchLandDetails()
-    }
-  }, [params.id])
-
-  const fetchLandDetails = async () => {
+  const fetchLandDetails = useCallback(async () => {
+    if (!params.id) return;
+    setIsLoading(true);
     try {
       const response = await fetch(`/api/lands/${params.id}`, {
         credentials: "include",
       })
-
       if (response.ok) {
         const result = await response.json()
         if (result.success) {
@@ -34,19 +191,30 @@ export default function LandDetailsPage() {
     } finally {
       setIsLoading(false)
     }
+  }, [params.id]);
+
+  useEffect(() => {
+    fetchLandDetails()
+  }, [fetchLandDetails])
+
+  const getSuggestedCrops = () => {
+    if (!land?.land_type) return []
+    const landTypeCrops = cropSuggestions[land.land_type]
+    if (!landTypeCrops) return cropSuggestions["Others"]["others"];
+    return landTypeCrops[land.soil_quality] || landTypeCrops["others"] || []
+  }
+
+  const getCropEmoji = (crop) => {
+    return cropEmojis[crop] || "🌱"
   }
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600"></div>
-      </div>
-    )
+    return <PageSkeleton />;
   }
 
   if (!land) {
     return (
-      <div className="text-center py-12">
+      <div className="max-w-6xl mx-auto text-center py-16 px-4">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Land Not Found</h2>
         <p className="text-gray-600 dark:text-gray-400 mb-6">
           The land you're looking for doesn't exist or you don't have permission to view it.
@@ -55,161 +223,121 @@ export default function LandDetailsPage() {
           href="/lands"
           className="inline-flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
         >
-          <FiArrowLeft 
-// @ts-ignore
-          className="h-4 w-4" />
+          <FiArrowLeft className="h-4 w-4" />
           Back to Lands
         </Link>
       </div>
     )
   }
 
+  const suggestedCrops = getSuggestedCrops()
+
   return (
-    <div className="space-y-6">
+    <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/lands" className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors">
-          <FiArrowLeft 
-// @ts-ignore
-          className="h-5 w-5" />
+        <Link href="/lands" className="p-2.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors">
+          <FiArrowLeft className="h-5 w-5 text-gray-700 dark:text-gray-300" />
         </Link>
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{land.land_type} Land</h1>
-          <p className="text-gray-600 dark:text-gray-400">
-            {land.area} acres • Added {new Date(land.created_at).toLocaleDateString()}
+          <h1 className="text-2xl md:text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{land.land_type} Land</h1>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Property ID: {land.id}
           </p>
         </div>
       </div>
 
-      {/* Content */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Image */}
-        <div className="space-y-4">
-          <div className="aspect-video bg-gray-100 dark:bg-gray-700 rounded-lg overflow-hidden">
+      {/* Top Content Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Left Column: Image */}
+        <div className="md:col-span-1 space-y-6">
+          <div className="relative aspect-square w-full bg-gray-100 dark:bg-gray-800 rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700">
             {land.land_image ? (
-              <img
-                src={land.land_image || "/placeholder.svg"}
+              <Image
+                src={land.land_image}
                 alt={`${land.land_type} land`}
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             ) : (
               <div className="w-full h-full flex items-center justify-center">
-                <FiMap 
-// @ts-ignore
-                className="h-16 w-16 text-gray-400" />
+                <FiMap className="h-16 w-16 text-gray-400 dark:text-gray-500" />
               </div>
             )}
           </div>
-        </div>
-
-        {/* Details */}
-        <div className="space-y-6">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Land Details</h2>
-
-            <div className="space-y-4">
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Type:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{land.land_type}</span>
-              </div>
-
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Area:</span>
-                <span className="font-medium text-gray-900 dark:text-white">{land.area} acres</span>
-              </div>
-
-              {land.soil_quality && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Soil Quality:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">{land.soil_quality}</span>
-                </div>
-              )}
-
-              <div className="flex justify-between">
-                <span className="text-gray-600 dark:text-gray-400">Added:</span>
-                <span className="font-medium text-gray-900 dark:text-white">
-                  {new Date(land.created_at).toLocaleDateString()}
-                </span>
-              </div>
-
-              {land.updated_at !== land.created_at && (
-                <div className="flex justify-between">
-                  <span className="text-gray-600 dark:text-gray-400">Last Updated:</span>
-                  <span className="font-medium text-gray-900 dark:text-white">
-                    {new Date(land.updated_at).toLocaleDateString()}
-                  </span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {land.description && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Description</h2>
-              <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{land.description}</p>
-            </div>
-          )}
-
-          {land.tags && land.tags.length > 0 && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Tags</h2>
-              <div className="flex flex-wrap gap-2">
-                {land.tags.map((tag, index) => (
-                  <span
-                    key={index}
-                    className="px-3 py-1 bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 text-sm rounded-full"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           {land.location_link && (
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Location</h2>
-              <a
-                href={land.location_link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                <FiMapPin 
-// @ts-ignore
-                className="h-4 w-4" />
-                View on Map
-              </a>
-            </div>
+            <a
+              href={land.location_link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors font-semibold"
+            >
+              <FiMapPin className="h-5 w-5" />
+              View on Map
+            </a>
           )}
         </div>
-      </div>
+        
+        {/* Right Column: Details */}
+        <div className="md:col-span-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700 h-full">
+             <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6">Property Details</h2>
+             
+             <div className="mb-6">
+                 <h3 className="text-md font-semibold text-gray-800 dark:text-gray-300 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2">Overview</h3>
+                 <ul className="space-y-3 text-sm pt-2">
+                    <li className="flex justify-between items-center"><span className="text-gray-600 dark:text-gray-400">Area:</span> <span className="font-medium text-gray-900 dark:text-white">{land.area} acres</span></li>
+                    <li className="flex justify-between items-center"><span className="text-gray-600 dark:text-gray-400">Soil Quality:</span> <span className="font-medium text-gray-900 dark:text-white">{land.soil_quality || 'N/A'}</span></li>
+                 </ul>
+             </div>
 
-      {/* Coming Soon Section */}
-      <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-gray-800 dark:to-gray-700 rounded-lg p-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">More Features Coming Soon!</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">
-          We're working on exciting new features for land management including crop planning, yield tracking, weather
-          integration, and much more.
-        </p>
-        <div className="flex flex-wrap justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
-          <span className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-            Crop Planning
-          </span>
-          <span className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            Weather Integration
-          </span>
-          <span className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-            Yield Tracking
-          </span>
-          <span className="flex items-center gap-2">
-            <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-            Financial Analytics
-          </span>
+             {land.description && (
+                <div className="mb-6">
+                   <h3 className="text-md font-semibold text-gray-800 dark:text-gray-300 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2"><FiInfo /> Description</h3>
+                   <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed pt-2">{land.description}</p>
+                </div>
+             )}
+             
+             {land.tags && land.tags.length > 0 && (
+                <div>
+                   <h3 className="text-md font-semibold text-gray-800 dark:text-gray-300 mb-3 border-b border-gray-200 dark:border-gray-700 pb-2 flex items-center gap-2"><FiTag /> Tags</h3>
+                   <div className="flex flex-wrap gap-2 pt-2">
+                      {land.tags.map((tag, index) => (
+                         <span key={index} className="px-3 py-1 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 text-xs font-medium rounded-full">
+                            {tag}
+                         </span>
+                      ))}
+                   </div>
+                </div>
+             )}
+          </div>
         </div>
+      </div>
+      
+      {/* Full-Width Bottom Sections */}
+      {suggestedCrops.length > 0 && (
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"><FaSeedling /> Recommended Crops</h2>
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4">
+            {suggestedCrops.map((crop, index) => (
+              <div key={index} className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-2 text-center hover:shadow-md transition-shadow border border-gray-200 dark:border-gray-700 h-12 flex items-center justify-center">
+                <div className="flex items-center gap-1">
+                  <span className="text-lg">{getCropEmoji(crop)}</span>
+                  <p className="font-medium text-gray-800 dark:text-gray-200 text-xs">{crop}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
+         <div className="flex items-center gap-3">
+            <FaChartLine className="h-6 w-6 text-gray-400" />
+            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Land statistics: <span className="text-base font-normal text-gray-500 dark:text-gray-400">will be added later</span></h2>
+         </div>
       </div>
     </div>
   )

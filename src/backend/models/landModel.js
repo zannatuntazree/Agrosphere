@@ -33,9 +33,9 @@ export const landModel = {
     return result[0]
   },
 
-  // Update land
+  // Update land 
   async updateLand(id, userId, landData) {
-    const { land_type, area, soil_quality, location_link, description, tags, land_image } = landData
+    const { land_type, area, soil_quality, location_link, description, tags } = landData
     const result = await sql`
       UPDATE lands 
       SET land_type = ${land_type}, 
@@ -44,7 +44,6 @@ export const landModel = {
           location_link = ${location_link || null}, 
           description = ${description || null}, 
           tags = ${tags || []}, 
-          land_image = ${land_image || null},
           updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id} AND user_id = ${userId}
       RETURNING id, user_id, land_type, area, soil_quality, location_link, description, tags, land_image, created_at, updated_at

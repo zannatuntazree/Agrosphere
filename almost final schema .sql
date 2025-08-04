@@ -1,3 +1,4 @@
+-- Chnage shcema as needed
 -- Enable this once per DB
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
