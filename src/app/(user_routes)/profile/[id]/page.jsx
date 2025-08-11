@@ -199,14 +199,14 @@ export default function ProfilePage() {
               </div>
             )}
 
-            {user.address && (
+            {user.area && (
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg shadow-sm">
                   <FiMapPin className="h-4 w-4 text-orange-600 dark:text-orange-400" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Address</p>
-                  <p className="font-medium text-gray-900 dark:text-white">{user.address}</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">area</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{user.area}</p>
                 </div>
               </div>
             )}

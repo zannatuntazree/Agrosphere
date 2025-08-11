@@ -52,7 +52,7 @@ export default function EditProfileDialog({ isOpen, onClose, user, onProfileUpda
       setFormData({
         name: user.name || "",
         phone: user.phone || "",
-        address: user.address || "",
+        area: user.area || "",
         city: user.city || "",
         country: user.country || "",
         age: user.age ? user.age.toString() : "",
@@ -161,8 +161,8 @@ export default function EditProfileDialog({ isOpen, onClose, user, onProfileUpda
               <input id="age" name="age" type="number" value={formData.age} onChange={handleInputChange} className="flex h-10 w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50" />
             </div>
             <div>
-              <label htmlFor="address" className="block text-sm font-medium leading-none mb-1">Address</label>
-              <textarea id="address" name="address" value={formData.address} onChange={handleInputChange} rows={2} className="flex min-h-[60px] w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50" />
+              <label htmlFor="area" className="block text-sm font-medium leading-none mb-1">area</label>
+              <textarea id="area" name="area" value={formData.area} onChange={handleInputChange} rows={2} className="flex min-h-[60px] w-full rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 px-3 py-2 text-sm placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:cursor-not-allowed disabled:opacity-50" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>

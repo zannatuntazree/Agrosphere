@@ -182,7 +182,7 @@ export default function SideNavbar({ isOpen, onClose }) {
                   isHovered ? "justify-start" : "justify-center",
                   isActive
                     ? "text-primary-foreground"
-                    : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground",
+                    : "text-muted-foreground  hover:text-accent-foreground",
                 )}
               >
                 <div className="relative flex-shrink-0">

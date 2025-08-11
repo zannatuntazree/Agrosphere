@@ -8,8 +8,6 @@ export const userController = {
       if (!user) {
         throw new Error("User not found")
       }
-
-      // Get land stats
       const landStats = await landModel.getLandStats(userId)
       const totalLands = landStats.reduce((sum, stat) => sum + Number.parseInt(stat.type_count || 0), 0)
       const totalArea = landStats.reduce((sum, stat) => sum + Number.parseFloat(stat.total_area || 0), 0)

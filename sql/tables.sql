@@ -5,7 +5,7 @@ CREATE TABLE users (
   email TEXT UNIQUE NOT NULL,
   password TEXT NOT NULL,
   phone TEXT,
-  address TEXT,
+  area TEXT,
   city TEXT,
   country TEXT,
   profile_pic TEXT, -- Cloudinary URL

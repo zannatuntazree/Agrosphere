@@ -23,7 +23,7 @@ export const userModel = {
   // Find user by ID
   async findUserById(id) {
     const result = await sql`
-      SELECT id, name, email, phone, address, city, country, profile_pic, age, preferred_crops, created_at, updated_at
+      SELECT id, name, email, phone, area, city, country, profile_pic, age, preferred_crops, created_at, updated_at
       FROM users WHERE id = ${id}
     `
     return result[0]
@@ -31,14 +31,14 @@ export const userModel = {
 
   // Update user profile
   async updateUser(id, userData) {
-    const { name, phone, address, city, country, age, preferred_crops } = userData
+    const { name, phone, area, city, country, age, preferred_crops } = userData
     const result = await sql`
       UPDATE users 
-      SET name = ${name}, phone = ${phone}, address = ${address}, 
+      SET name = ${name}, phone = ${phone}, area = ${area}, 
           city = ${city}, country = ${country}, age = ${age}, 
           preferred_crops = ${preferred_crops}, updated_at = CURRENT_TIMESTAMP
       WHERE id = ${id}
-      RETURNING id, name, email, phone, address, city, country, profile_pic, age, preferred_crops, updated_at
+      RETURNING id, name, email, phone, area, city, country, profile_pic, age, preferred_crops, updated_at
     `
     return result[0]
   },
