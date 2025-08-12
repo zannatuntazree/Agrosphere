@@ -72,3 +72,35 @@ CREATE TABLE lands (
 CREATE INDEX idx_lands_user_id ON lands(user_id);
 CREATE INDEX idx_lands_created_at ON lands(created_at);
 CREATE INDEX idx_lands_land_type ON lands(land_type);
+
+
+
+-- Create admin table
+CREATE TABLE IF NOT EXISTS admin (
+    id SERIAL PRIMARY KEY,
+    username VARCHAR(50) UNIQUE NOT NULL,
+    password VARCHAR(255) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Insert default admin (password: admin123)
+INSERT INTO admin (username, password, email) VALUES 
+('admin', '$2a$12$FmHwXEja.5cw8RisOzw4keox9SMDvEggNMRNVgCeUiH0D407W8PVu', 'admin@agriculture.com');
+
+-- Note: The password hash above is for 'admin123'
+-- In production, generate a proper bcrypt hash for your desired password
+
+
+
+--- Not used yet ------------------------------------------------------------
+CREATE TABLE crop_records (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  land_id TEXT NOT NULL REFERENCES lands(id) ON DELETE CASCADE,
+  crop_type TEXT NOT NULL,
+  planting_date DATE NOT NULL,
+  harvest_date DATE,
+  total_yield NUMERIC(10, 2), -- In kg or maund
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+------------------------------------------------------------------------------

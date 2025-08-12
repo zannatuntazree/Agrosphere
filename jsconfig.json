@@ -7,7 +7,6 @@
       "@/lib/*": ["lib/*"],
       "@/backend/*": ["backend/*"],
       "@/hooks/*": ["hooks/*"],
-      "@/styles/*": ["styles/*"],
       "@/app/*": ["app/*"]
     },
     "checkJs": true,                    
