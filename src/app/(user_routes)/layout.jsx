@@ -8,7 +8,6 @@ import { isAuthenticated, getUserFromStorage } from "@/lib/auth"
 
 export default function UserLayout({ children }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [user, setUser] = useState(null)
   const router = useRouter()
 
@@ -61,20 +60,13 @@ export default function UserLayout({ children }) {
         router.push("/")
         return
       } finally {
-        setIsLoading(false)
       }
     }
 
     checkAuth()
   }, [router])
 
-  // if (isLoading) {
-  //   return (
-  //     <div className="flex items-center justify-center min-h-screen">
-  //       <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-green-600"></div>
-  //     </div>
-  //   )
-  // }
+
 
   return (
     <div className="min-h-screen bg-background">

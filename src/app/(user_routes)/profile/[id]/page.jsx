@@ -43,13 +43,13 @@ export default function ProfilePage() {
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(updatedUser))
     }
-    // The toast is now handled by the Dialog component
+    
   }
 
   if (isLoading) {
     return (
       <div className="max-w-7xl mx-auto p-4 sm:p-6 min-h-screen">
-        {/* Profile section skeleton - full width */}
+        {/* Profile section skeleton */}
         <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-slate-800 dark:to-slate-900 rounded-xl p-6 border border-green-200 dark:border-slate-700 shadow-lg dark:shadow-2xl mb-6">
           <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
             <Skeleton className="w-24 h-24 sm:w-32 sm:h-32 rounded-lg" />
@@ -80,7 +80,7 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Stats cards skeleton - 2x2 grid */}
+        {/* Stats cards skeleton */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
@@ -118,7 +118,7 @@ export default function ProfilePage() {
 
   return (
     <div className="max-w-7xl mx-auto p-4 sm:p-6 min-h-screen">
-      {/* Profile Section - Full Width */}
+      {/* Profile Section */}
       <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-slate-800 dark:to-slate-900 rounded-xl p-6 border border-green-200 dark:border-slate-700 shadow-lg dark:shadow-2xl mb-6">
         {/* Profile Header */}
         <div className="flex flex-col sm:flex-row items-center gap-6 mb-6">
@@ -232,7 +232,7 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      {/* Stats Cards - 2x2 Grid */}
+      {/* Stats Cards  */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Land Statistics */}
         <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
