@@ -1,15 +1,16 @@
 "use client"
 
 // @ts-ignore
-import { useState, useEffect } from "react"
+import { Button } from "@/components/ui/button"
+import { getUserIdFromStorage, removeAuthCookies } from "@/lib/auth"
+import { cn } from "@/lib/utils"
+import { AnimatePresence, motion } from "motion/react"
+import { useTheme } from "next-themes"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { useTheme } from "next-themes"
-import { motion, AnimatePresence } from "motion/react"
-import { Button } from "@/components/ui/button"
-import { FiHome, FiUser, FiSun, FiMoon, FiLogOut, FiX, FiBell, FiDollarSign, FiMap } from "react-icons/fi"
-import { removeAuthCookies, getUserIdFromStorage } from "@/lib/auth"
-import { cn } from "@/lib/utils"
+import { useEffect, useState } from "react"
+import { FaSeedling } from "react-icons/fa"
+import { FiBell, FiCloud, FiDollarSign, FiHome, FiLogOut, FiMap, FiMoon, FiShoppingCart, FiSun, FiUser, FiX } from "react-icons/fi"
 
 const navigationItems = [
   {
@@ -28,16 +29,30 @@ const navigationItems = [
     icon: FiDollarSign,
   },
   {
-    title: "Notifications",
-    href: "/notifications",
-    icon: FiBell,
-  },
-    {
     title: "My Lands",
     href: "/lands",
     icon: FiMap,
   },
-
+  {
+    title: "Marketplace",
+    href: "/marketplace",
+    icon: FiShoppingCart,
+  },
+  {
+    title: "Crop Planning",
+    href: "/crop-planning",
+    icon: FaSeedling,
+  },
+  {
+    title: "Weather",
+    href: "/weather",
+    icon: FiCloud,
+  },
+  {
+    title: "Notifications",
+    href: "/notifications",
+    icon: FiBell,
+  },
 ]
 
 export default function SideNavbar({ isOpen, onClose }) {

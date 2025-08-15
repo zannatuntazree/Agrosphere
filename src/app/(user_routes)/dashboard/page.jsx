@@ -1,10 +1,10 @@
 "use client"
 
-import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { FiTrendingUp, FiTrendingDown, FiDollarSign, FiCloud, FiShoppingCart, FiArrowRight } from "react-icons/fi"
+import { useRouter } from "next/navigation"
+import { useEffect, useState } from "react"
 import { FaSeedling } from "react-icons/fa"
+import { FiArrowRight, FiCloud, FiDollarSign, FiShoppingCart, FiTrendingDown, FiTrendingUp } from "react-icons/fi"
 
 
 const bentoBoxes = [
@@ -22,7 +22,7 @@ const bentoBoxes = [
     description: "Current weather and forecasts",
     icon: FiCloud,
     gradient: "from-amber-400 via-orange-500 to-orange-600",
-    route: null,
+    route: "/weather",
   },
   {
     id: "marketplace",
@@ -30,15 +30,15 @@ const bentoBoxes = [
     description: "Buy and sell agricultural products",
     icon: FiShoppingCart,
     gradient: "from-violet-400 via-purple-500 to-purple-600",
-    route: null,
+    route: "/marketplace",
   },
   {
     id: "current-season",
-    title: "Current Season Crops",
-    description: "Recommended crops for current season",
+    title: "Crop Planning",
+    description: "Plan seasonal crops and view harvests",
     icon: FaSeedling,
     gradient: "from-emerald-400 via-emerald-500 to-emerald-600",
-    route: null,
+    route: "/crop-planning",
   },
 ]
 

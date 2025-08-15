@@ -93,6 +93,53 @@ INSERT INTO admin (username, password, email) VALUES
 
 
 
+-- Create marketplace listings table for B2B crop sales
+CREATE TABLE marketplace_listings (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  crop_name TEXT NOT NULL,
+  description TEXT,
+  price_per_unit NUMERIC(10, 2) NOT NULL,
+  unit TEXT NOT NULL, -- e.g., 'kg', 'ton', 'quintal'
+  quantity_available NUMERIC(10, 2) NOT NULL,
+  location TEXT,
+  contact_phone TEXT,
+  contact_email TEXT,
+  images TEXT[], -- Array of image URLs
+  status TEXT CHECK (status IN ('active', 'sold', 'inactive')) DEFAULT 'active',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for marketplace listings
+CREATE INDEX idx_marketplace_user_id ON marketplace_listings(user_id);
+CREATE INDEX idx_marketplace_crop_name ON marketplace_listings(crop_name);
+CREATE INDEX idx_marketplace_status ON marketplace_listings(status);
+CREATE INDEX idx_marketplace_created_at ON marketplace_listings(created_at);
+
+-- Create seasonal crop planning table
+CREATE TABLE seasonal_crop_plans (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  land_id TEXT REFERENCES lands(id) ON DELETE CASCADE,
+  crop_name TEXT NOT NULL,
+  season TEXT NOT NULL, -- e.g., 'Winter', 'Summer', 'Monsoon'
+  planting_date DATE,
+  expected_harvest_date DATE,
+  estimated_yield NUMERIC(10, 2),
+  yield_unit TEXT, -- e.g., 'kg', 'ton'
+  notes TEXT,
+  status TEXT CHECK (status IN ('planned', 'planted', 'harvested', 'cancelled')) DEFAULT 'planned',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for seasonal crop plans
+CREATE INDEX idx_seasonal_crop_plans_user_id ON seasonal_crop_plans(user_id);
+CREATE INDEX idx_seasonal_crop_plans_land_id ON seasonal_crop_plans(land_id);
+CREATE INDEX idx_seasonal_crop_plans_season ON seasonal_crop_plans(season);
+CREATE INDEX idx_seasonal_crop_plans_status ON seasonal_crop_plans(status);
+
 --- Not used yet ------------------------------------------------------------
 CREATE TABLE crop_records (
   id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
