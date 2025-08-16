@@ -10,7 +10,7 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { FaSeedling } from "react-icons/fa"
-import { FiBell, FiCloud, FiDollarSign, FiHome, FiLogOut, FiMap, FiMoon, FiShoppingCart, FiSun, FiUser, FiX } from "react-icons/fi"
+import { FiBell, FiCloud, FiDollarSign, FiHome, FiLogOut, FiMap, FiMoon, FiShoppingCart, FiSun, FiUser, FiUsers, FiX } from "react-icons/fi"
 
 const navigationItems = [
   {
@@ -42,6 +42,11 @@ const navigationItems = [
     title: "Crop Planning",
     href: "/crop-planning",
     icon: FaSeedling,
+  },
+  {
+    title: "Nearby Farmers",
+    href: "/nearby",
+    icon: FiUsers,
   },
   {
     title: "Weather",

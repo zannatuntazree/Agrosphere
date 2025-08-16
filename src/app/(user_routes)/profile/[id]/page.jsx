@@ -1,6 +1,7 @@
 // @ts-nocheck
 "use client"
 import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import { FiEdit, FiMail, FiPhone, FiMapPin, FiCalendar, FiUser, FiMap, FiLayers, FiMessageSquare,  FiTrendingUp } from "react-icons/fi"
 import { FaSeedling } from "react-icons/fa";
 import { Skeleton } from "@/components/ui/skeleton"
@@ -8,14 +9,36 @@ import EditProfileDialog from "./_components/editprofile"
 import Image from "next/image";
 
 export default function ProfilePage() {
+  const params = useParams()
+  const userId = params.id
   const [user, setUser] = useState(null)
+  const [currentUser, setCurrentUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [isOwnProfile, setIsOwnProfile] = useState(false)
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        const response = await fetch("/api/user/profile", { credentials: "include" })
+        // First get current user to check if this is their own profile
+        const currentUserResponse = await fetch("/api/user/profile", { credentials: "include" })
+        if (currentUserResponse.ok) {
+          const currentUserResult = await currentUserResponse.json()
+          if (currentUserResult.success) {
+            setCurrentUser(currentUserResult.user)
+            setIsOwnProfile(currentUserResult.user.id === parseInt(userId))
+            
+            // If viewing own profile, use the current user data
+            if (currentUserResult.user.id === parseInt(userId)) {
+              setUser(currentUserResult.user)
+              setIsLoading(false)
+              return
+            }
+          }
+        }
+
+        // If viewing another user's profile, fetch their data
+        const response = await fetch(`/api/user/profile?userId=${userId}`, { credentials: "include" })
         if (response.ok) {
           const result = await response.json()
           if (result.success) {
@@ -141,21 +164,25 @@ export default function ProfilePage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{user.name}</h2>
-                <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 text-gray-700 dark:text-gray-300">
-                  <FiMail className="h-4 w-4" />
-                  <span>{user.email}</span>
-                </div>
+                {user.email && (
+                  <div className="flex items-center justify-center sm:justify-start gap-2 mt-2 text-gray-700 dark:text-gray-300">
+                    <FiMail className="h-4 w-4" />
+                    <span>{user.email}</span>
+                  </div>
+                )}
                 <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
                   <FiCalendar className="h-4 w-4" />
                   <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
                 </div>
               </div>
-              <button 
-                onClick={() => setIsEditDialogOpen(true)} 
-                className="inline-flex items-center justify-center rounded-full text-sm font-medium h-10 px-4 py-2 bg-green-600 text-white  hover:-translate-y-1 cursor-pointer transition-all duration-300 mt-4 sm:mt-0 shadow-md hover:shadow-lg"
-              >
-                <FiEdit className="mr-2 h-4 w-4" /> Edit Profile
-              </button>
+              {isOwnProfile && (
+                <button 
+                  onClick={() => setIsEditDialogOpen(true)} 
+                  className="inline-flex items-center justify-center rounded-full text-sm font-medium h-10 px-4 py-2 bg-green-600 text-white  hover:-translate-y-1 cursor-pointer transition-all duration-300 mt-4 sm:mt-0 shadow-md hover:shadow-lg"
+                >
+                  <FiEdit className="mr-2 h-4 w-4" /> Edit Profile
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -311,12 +338,14 @@ export default function ProfilePage() {
         </div>
       </div>
 
-      <EditProfileDialog 
-        isOpen={isEditDialogOpen} 
-        onClose={() => setIsEditDialogOpen(false)} 
-        user={user} 
-        onProfileUpdate={handleProfileUpdate} 
-      />
+      {isOwnProfile && (
+        <EditProfileDialog 
+          isOpen={isEditDialogOpen} 
+          onClose={() => setIsEditDialogOpen(false)} 
+          user={user} 
+          onProfileUpdate={handleProfileUpdate} 
+        />
+      )}
     </div>
   )
 }
