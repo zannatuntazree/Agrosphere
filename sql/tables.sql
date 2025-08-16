@@ -144,10 +144,16 @@ CREATE INDEX idx_seasonal_crop_plans_status ON seasonal_crop_plans(status);
 CREATE TABLE crop_records (
   id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
   land_id TEXT NOT NULL REFERENCES lands(id) ON DELETE CASCADE,
-  crop_type TEXT NOT NULL,
+  crop_name TEXT NOT NULL, 
+  season TEXT NOT NULL, 
+  year INTEGER NOT NULL,
   planting_date DATE NOT NULL,
   harvest_date DATE,
-  total_yield NUMERIC(10, 2), -- In kg or maund
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  total_yield NUMERIC(10,2),
+  total_expenses NUMERIC(10,2), 
+  total_revenue NUMERIC(10,2),
+  notes TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ------------------------------------------------------------------------------

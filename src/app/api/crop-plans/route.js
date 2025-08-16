@@ -9,7 +9,7 @@ export async function GET(request) {
     const isPublic = searchParams.get("public") === "true"
     
     if (isPublic) {
-      // Get public crop plans (others' upcoming harvest plans)
+      // Get public crop plans 
       const filters = {
         season: searchParams.get("season"),
         crop_name: searchParams.get("crop_name"),

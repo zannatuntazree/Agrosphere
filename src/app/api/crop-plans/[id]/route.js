@@ -34,7 +34,7 @@ export async function PUT(request, { params }) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await params
     const body = await request.json()
 
     const result = await cropPlanController.updateCropPlan(id, authToken, body)
@@ -65,7 +65,7 @@ export async function DELETE(request, { params }) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
     }
 
-    const { id } = params
+    const { id } = await params
 
     const result = await cropPlanController.deleteCropPlan(id, authToken)
 

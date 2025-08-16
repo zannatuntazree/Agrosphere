@@ -141,7 +141,7 @@ export default function AdminDashboard() {
 
         <div className="space-y-6">
           {/* Tab Navigation */}
-          <div className="relative bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <div className="relative w-[50%] bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
             <div className="grid w-full grid-cols-3 relative">
               <motion.div
                 className="absolute top-1 bottom-1 bg-blue-400/70 dark:bg-gray-700 rounded-md shadow-sm"
