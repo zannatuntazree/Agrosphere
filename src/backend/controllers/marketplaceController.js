@@ -1,5 +1,5 @@
 import { marketplaceModel } from "../models/marketplaceModel.js"
-
+import { deletePicture } from "@/lib/cloudinary.js"
 export const marketplaceController = {
   // Create new marketplace listing
   async createListing(userId, listingData) {
@@ -123,6 +123,30 @@ export const marketplaceController = {
   // Update listing
   async updateListing(listingId, userId, updateData) {
     try {
+      
+      const oldListing = await marketplaceModel.getListingById(listingId)
+
+      
+      if (
+        updateData.images && 
+        oldListing && 
+        oldListing.images && oldListing.images.length > 0 &&
+        updateData.images[0] !== oldListing.images[0] 
+      ) {
+        const oldImageUrl = oldListing.images[0]
+        
+
+        const folderName = "agrosphere/marketplace/"
+        const publicIdStartIndex = oldImageUrl.indexOf(folderName)
+        
+        if (publicIdStartIndex !== -1) {
+          const publicIdWithExtension = oldImageUrl.substring(publicIdStartIndex)
+          const publicId = publicIdWithExtension.substring(0, publicIdWithExtension.lastIndexOf('.'))
+
+          await deletePicture(publicId)
+        }
+      }
+
       // Validate numeric fields if provided
       if (updateData.price_per_unit && (isNaN(updateData.price_per_unit) || Number.parseFloat(updateData.price_per_unit) <= 0)) {
         throw new Error("Price per unit must be a positive number")
@@ -132,12 +156,12 @@ export const marketplaceController = {
         throw new Error("Quantity available must be a positive number")
       }
 
-      // Process the update data
       const processedData = {
         ...updateData,
         price_per_unit: updateData.price_per_unit ? Number.parseFloat(updateData.price_per_unit) : undefined,
         quantity_available: updateData.quantity_available ? Number.parseFloat(updateData.quantity_available) : undefined
       }
+
 
       const listing = await marketplaceModel.updateListing(listingId, userId, processedData)
 

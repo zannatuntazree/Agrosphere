@@ -7,7 +7,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 })
 
-export const uploadPicture = async (file, folder = "agriculture-app/default") => {
+export const uploadPicture = async (file, folder = "agrosphere/default") => {
   try {
     const result = await cloudinary.uploader.upload(file, {
       folder: folder,

@@ -11,7 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { FaSeedling } from "react-icons/fa";
 import {
   FiCalendar,
@@ -61,6 +61,7 @@ export default function CropPlanningPage() {
   const [userLands, setUserLands] = useState([]);
   const [recommendations, setRecommendations] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSearching, setIsSearching] = useState(false); // State for community search
   const [error, setError] = useState(null);
   const [activeTab, setActiveTab] = useState("my-plans");
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -84,6 +85,8 @@ export default function CropPlanningPage() {
     notes: "",
   });
 
+  const isInitialMount = useRef(true);
+
   useEffect(() => {
     fetchData();
     fetchRecommendations();
@@ -91,11 +94,16 @@ export default function CropPlanningPage() {
   }, []);
 
   useEffect(() => {
-    // Refetch when active tab or season filter changes
+    // Prevent this from running on the initial render because fetchData() already covers it.
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
     if (activeTab === "my-plans") {
       fetchCropPlans();
     } else {
-      fetchPublicPlans();
+      handlePublicPlansFetch(); // Use the wrapper to show search skeleton
     }
   }, [activeTab, seasonFilter]);
 
@@ -112,7 +120,6 @@ export default function CropPlanningPage() {
       const response = await fetch(`/api/crop-plans?${params}`, {
         credentials: "include",
       });
-
       const result = await response.json();
 
       if (response.ok && result.success) {
@@ -137,7 +144,6 @@ export default function CropPlanningPage() {
       const response = await fetch(`/api/crop-plans?${params}`, {
         credentials: "include",
       });
-
       const result = await response.json();
 
       if (response.ok && result.success) {
@@ -147,14 +153,23 @@ export default function CropPlanningPage() {
       console.error("Error fetching public plans:", error);
     }
   };
-  
+
+  const handlePublicPlansFetch = async () => {
+    setIsSearching(true);
+    try {
+      await fetchPublicPlans();
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
   const handleSearch = () => {
-    fetchPublicPlans();
+    handlePublicPlansFetch();
   };
 
   const handleSearchTypeChange = (newType) => {
     setSearchType(newType);
-    setSearchTerm(""); // Clear input when type changes
+    setSearchTerm("");
   };
 
   const fetchRecommendations = async () => {
@@ -162,9 +177,7 @@ export default function CropPlanningPage() {
       const response = await fetch("/api/crop-plans/recommendations", {
         credentials: "include",
       });
-
       const result = await response.json();
-
       if (response.ok && result.success) {
         setRecommendations(result);
       }
@@ -178,9 +191,7 @@ export default function CropPlanningPage() {
       const response = await fetch("/api/lands", {
         credentials: "include",
       });
-
       const result = await response.json();
-
       if (response.ok && result.success) {
         setUserLands(result.lands || []);
       }
@@ -215,7 +226,6 @@ export default function CropPlanningPage() {
         body: JSON.stringify(payload),
         credentials: "include",
       });
-
       const result = await response.json();
 
       if (response.ok && result.success) {
@@ -249,7 +259,6 @@ export default function CropPlanningPage() {
 
   const handleEdit = (plan) => {
     setEditingPlan(plan);
-
     const isKnownCrop = Object.keys(cropEmojis).includes(plan.crop_name);
 
     setFormData({
@@ -268,15 +277,12 @@ export default function CropPlanningPage() {
 
   const handleDelete = async (planId) => {
     if (!confirm("Are you sure you want to delete this crop plan?")) return;
-
     try {
       const response = await fetch(`/api/crop-plans/${planId}`, {
         method: "DELETE",
         credentials: "include",
       });
-
       const result = await response.json();
-
       if (response.ok && result.success) {
         fetchCropPlans();
       } else {
@@ -297,28 +303,7 @@ export default function CropPlanningPage() {
   };
 
   if (isLoading) {
-    return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="flex justify-between items-center">
-          <Skeleton className="h-9 w-48" />
-          <Skeleton className="h-10 w-32" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <div
-              key={index}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 border"
-            >
-              <Skeleton className="h-6 w-3/4 mb-4" />
-              <Skeleton className="h-4 w-1/2 mb-2" />
-              <Skeleton className="h-4 w-2/3 mb-2" />
-              <Skeleton className="h-4 w-1/3" />
-            </div>
-          ))}
-        </div>
-      </div>
-    );
+    return <CropPlanningPageSkeleton />;
   }
 
   return (
@@ -329,7 +314,6 @@ export default function CropPlanningPage() {
             Crop Planning
           </h1>
         </div>
-
         <Dialog
           open={isCreateDialogOpen}
           onOpenChange={(open) => {
@@ -418,14 +402,12 @@ export default function CropPlanningPage() {
         ))}
       </div>
 
-      {/* FILTERS & SEARCH BAR */}
       <div className="flex flex-col sm:flex-row items-center gap-3">
         <div className="flex-shrink-0 relative">
           <select
             value={seasonFilter}
             onChange={(e) => setSeasonFilter(e.target.value)}
-            className="px-4  py-2 pr-3  border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-
+            className="px-4 py-2 pr-3 border border-gray-300 dark:border-gray-600 rounded-full bg-white dark:bg-gray-800 text-gray-900 dark:text-white shadow-sm focus:outline-none focus:ring-2 focus:ring-green-500"
           >
             <option value="">All Seasons</option>
             {seasons.map((season) => (
@@ -490,154 +472,172 @@ export default function CropPlanningPage() {
         </AnimatePresence>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <AnimatePresence>
-          {(activeTab === "my-plans" ? cropPlans : publicPlans).map(
-            (plan, index) => (
-              <motion.div
-                key={plan.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300"
-              >
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="text-3xl">
-                      {getCropEmoji(plan.crop_name)}
-                    </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                        {plan.crop_name}
-                      </h3>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {plan.season}
-                      </p>
-                    </div>
-                  </div>
-
-                  {activeTab === "my-plans" && (
-                    <div className="flex gap-2">
-                      <button
-                        onClick={() => handleEdit(plan)}
-                        className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        <FiEdit className="h-4 w-4" />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(plan.id)}
-                        className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                      >
-                        <FiTrash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {activeTab === "public-plans" && (
-                  <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    <Link href={`/profile/${plan.user_id}`} className="flex items-center gap-2 hover:text-green-600 transition-colors">
-                      {plan.farmer_profile_pic ? (
-                        <Image
-                          src={plan.farmer_profile_pic}
-                          alt={plan.farmer_name}
-                          width={20}
-                          height={20}
-                          className="rounded-full"
-                        />
-                      ) : (
-                        <FiUsers className="h-5 w-5" />
-                      )}
-                      <span>{plan.farmer_name}</span>
-                    </Link>
-                    {plan.farmer_area && <span>• {plan.farmer_area}</span>}
-                  </div>
-                )}
-
-                <div className="space-y-2 mb-4">
-                  {plan.planting_date && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <FiCalendar className="h-4 w-4 text-green-600" />
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Planting:
-                      </span>
-                      <span>{formatDate(plan.planting_date)}</span>
-                    </div>
-                  )}
-                  {plan.expected_harvest_date && (
-                    <div className="flex items-center gap-2 text-sm">
-                      <FiCalendar className="h-4 w-4 text-orange-600" />
-                      <span className="text-gray-600 dark:text-gray-400">
-                        Harvest:
-                      </span>
-                      <span>{formatDate(plan.expected_harvest_date)}</span>
-                    </div>
-                  )}
-                </div>
-
-                {plan.estimated_yield && (
-                  <div className="flex items-center gap-2 text-sm mb-4">
-                    <FiTrendingUp className="h-4 w-4 text-purple-600" />
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Expected Yield:
-                    </span>
-                    <span className="font-medium">
-                      {plan.estimated_yield} {plan.yield_unit}
-                    </span>
-                  </div>
-                )}
-
-                {plan.land_type && (
-                  <div className="flex items-center gap-2 text-sm mb-4">
-                    <FiMapPin className="h-4 w-4 text-blue-600" />
-                    <span className="text-gray-600 dark:text-gray-400">
-                      Land:
-                    </span>
-                    <span>
-                      {plan.land_type} ({plan.land_area} acres)
-                    </span>
-                  </div>
-                )}
-
-                {activeTab === "my-plans" && plan.notes && (
-                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {plan.notes}
-                    </p>
-                  </div>
-                )}
-              </motion.div>
-            )
-          )}
-        </AnimatePresence>
-      </div>
-
-      {!isLoading &&
-        (activeTab === "my-plans" ? cropPlans : publicPlans).length === 0 &&
-        !error && (
-          <div className="text-center py-12">
-            <FaSeedling className="h-16 w-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
-              {activeTab === "my-plans"
-                ? "No crop plans yet"
-                : "No community plans found"}
-            </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-4">
-              {activeTab === "my-plans"
-                ? "Start planning your seasonal crops"
-                : "Try adjusting your search or filters"}
-            </p>
-            {activeTab === "my-plans" && (
-              <button
-                onClick={() => setIsCreateDialogOpen(true)}
-                className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
-              >
-                Create First Plan
-              </button>
-            )}
+      <div>
+        {activeTab === "public-plans" && isSearching ? (
+          <div>
+            <div className="text-center py-4">
+              <h3 className="text-lg font-medium text-gray-700 dark:text-gray-300">
+                Searching...
+              </h3>
+            </div>
+            <CardGridSkeleton />
           </div>
+        ) : (activeTab === "my-plans" ? cropPlans : publicPlans).length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence>
+              {(activeTab === "my-plans" ? cropPlans : publicPlans).map(
+                (plan, index) => (
+                  <motion.div
+                    key={plan.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -20 }}
+                    transition={{ duration: 0.3, delay: index * 0.05 }}
+                    className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg transition-all duration-300"
+                  >
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="flex items-center gap-3">
+                        <div className="text-3xl">
+                          {getCropEmoji(plan.crop_name)}
+                        </div>
+                        <div>
+                          <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                            {plan.crop_name}
+                          </h3>
+                          <p className="text-sm text-gray-600 dark:text-gray-400">
+                            {plan.season}
+                          </p>
+                        </div>
+                      </div>
+
+                      {activeTab === "my-plans" && (
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => handleEdit(plan)}
+                            className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            <FiEdit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(plan.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            <FiTrash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+
+                    {activeTab === "public-plans" && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
+                        <Link
+                          href={`/profile/${plan.user_id}`}
+                          className="flex items-center gap-2 hover:text-green-600 transition-colors"
+                        >
+                          {plan.farmer_profile_pic ? (
+                            <Image
+                              src={plan.farmer_profile_pic}
+                              alt={plan.farmer_name}
+                              width={20}
+                              height={20}
+                              className="rounded-full"
+                            />
+                          ) : (
+                            <FiUsers className="h-5 w-5" />
+                          )}
+                          <span>{plan.farmer_name}</span>
+                        </Link>
+                        {plan.farmer_area && (
+                          <span>• {plan.farmer_area}</span>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="space-y-2 mb-4">
+                      {plan.planting_date && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <FiCalendar className="h-4 w-4 text-green-600" />
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Planting:
+                          </span>
+                          <span>{formatDate(plan.planting_date)}</span>
+                        </div>
+                      )}
+                      {plan.expected_harvest_date && (
+                        <div className="flex items-center gap-2 text-sm">
+                          <FiCalendar className="h-4 w-4 text-orange-600" />
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Harvest:
+                          </span>
+                          <span>
+                            {formatDate(plan.expected_harvest_date)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+
+                    {plan.estimated_yield && (
+                      <div className="flex items-center gap-2 text-sm mb-4">
+                        <FiTrendingUp className="h-4 w-4 text-purple-600" />
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Expected Yield:
+                        </span>
+                        <span className="font-medium">
+                          {plan.estimated_yield} {plan.yield_unit}
+                        </span>
+                      </div>
+                    )}
+
+                    {plan.land_type && (
+                      <div className="flex items-center gap-2 text-sm mb-4">
+                        <FiMapPin className="h-4 w-4 text-blue-600" />
+                        <span className="text-gray-600 dark:text-gray-400">
+                          Land:
+                        </span>
+                        <span>
+                          {plan.land_type} ({plan.land_area} acres)
+                        </span>
+                      </div>
+                    )}
+
+                    {activeTab === "my-plans" && plan.notes && (
+                      <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                        <p className="text-sm text-gray-600 dark:text-gray-400">
+                          {plan.notes}
+                        </p>
+                      </div>
+                    )}
+                  </motion.div>
+                )
+              )}
+            </AnimatePresence>
+          </div>
+        ) : (
+          !error && (
+            <div className="text-center py-12">
+              <FaSeedling className="h-16 w-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+              <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+                {activeTab === "my-plans"
+                  ? "No crop plans yet"
+                  : "No community plans found"}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                {activeTab === "my-plans"
+                  ? "Start planning your seasonal crops"
+                  : "Try adjusting your search or filters"}
+              </p>
+              {activeTab === "my-plans" && (
+                <button
+                  onClick={() => setIsCreateDialogOpen(true)}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+                >
+                  Create First Plan
+                </button>
+              )}
+            </div>
+          )
         )}
+      </div>
 
       {error && (
         <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
@@ -647,3 +647,62 @@ export default function CropPlanningPage() {
     </div>
   );
 }
+
+// Skeleton Components
+
+const CardGridSkeleton = ({ count = 6 }) => (
+  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    {[...Array(count)].map((_, index) => (
+      <div
+        key={index}
+        className="bg-white dark:bg-gray-800/50 rounded-xl p-6 border"
+      >
+        <div className="flex items-start justify-between mb-4">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <div>
+              <Skeleton className="h-6 w-28 mb-2" />
+              <Skeleton className="h-4 w-20" />
+            </div>
+          </div>
+        </div>
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-3/4" />
+          <Skeleton className="h-4 w-2/3" />
+          <Skeleton className="h-4 w-1/2" />
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+const CropPlanningPageSkeleton = () => (
+  <div className="max-w-7xl mx-auto p-6 space-y-6 animate-pulse">
+    {/* Header */}
+    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <Skeleton className="h-9 w-48" />
+      <Skeleton className="h-10 w-32 rounded-full" />
+    </div>
+
+    {/* Recommendations block */}
+    <div className="p-6 border rounded-xl">
+      <Skeleton className="h-6 w-1/3 mb-4" />
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className="h-7 w-20 rounded-full" />
+        <Skeleton className="h-7 w-24 rounded-full" />
+        <Skeleton className="h-7 w-16 rounded-full" />
+      </div>
+    </div>
+
+    {/* Tabs */}
+    <Skeleton className="h-12 w-full sm:w-[60%] lg:w-[40%] rounded-full" />
+
+    {/* Filters */}
+    <div className="flex items-center gap-3">
+      <Skeleton className="h-10 w-36 rounded-full" />
+    </div>
+
+    {/* Grid of cards */}
+    <CardGridSkeleton />
+  </div>
+);

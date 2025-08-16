@@ -28,7 +28,7 @@ export async function POST(request) {
     const base64 = `data:${file.type};base64,${buffer.toString("base64")}`
 
     // Upload to Cloudinary using existing uploadPicture function with land-images folder
-    const uploadResult = await uploadPicture(base64, "agriculture-app/land-images")
+    const uploadResult = await uploadPicture(base64, "agrosphere/land-images")
 
     if (!uploadResult.success) {
       return NextResponse.json({ success: false, message: uploadResult.message }, { status: 400 })

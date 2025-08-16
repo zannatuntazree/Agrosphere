@@ -72,7 +72,6 @@ export default function SideNavbar({ isOpen, onClose }) {
 
   useEffect(() => {
     setUserId(getUserIdFromStorage())
-    // Load unread count on initial load
     fetchUnreadCount()
   }, [])
 
@@ -129,7 +128,7 @@ export default function SideNavbar({ isOpen, onClose }) {
   }
 
   const handleLinkClick = (href) => {
-    // If clicking on notifications, mark as loaded and reset count
+    // clicking on notifications, mark as loaded and reset count
     if (href === "/notifications") {
       setHasLoadedNotifications(true)
       setUnreadCount(0)

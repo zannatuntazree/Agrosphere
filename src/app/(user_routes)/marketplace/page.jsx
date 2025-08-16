@@ -3,9 +3,13 @@
 import { Skeleton } from "@/components/ui/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
 import { useEffect, useState } from "react"
-import { FiAlertTriangle, FiChevronDown, FiClock, FiMail, FiMapPin, FiPhone, FiPlus, FiSearch, FiShoppingCart, FiUser } from "react-icons/fi"
+import {
+  FiAlertTriangle, FiChevronDown, FiClock, FiFlag, FiMail, FiMapPin,
+  FiMessageSquare, FiPhone, FiPlus, FiSearch, FiShoppingCart, FiUser
+} from "react-icons/fi"
 import CreateListingDialog from "./_components/create-listing-dialog"
 import MyListingsDialog from "./_components/my-listing-dialog"
+import ReportListingDialog from "./_components/report-listing-dialog"
 import Image from "next/image"
 import Link from "next/link"
 
@@ -16,13 +20,49 @@ const cropEmojis = {
 }
 const getCropEmoji = (cropName) => cropEmojis[cropName] || cropEmojis.Other
 
+const ListingCardSkeleton = () => (
+  <div className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-4 space-y-4">
+    <Skeleton className="h-40 w-full rounded-lg" />
+    <div className="space-y-2">
+      <Skeleton className="h-5 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+    <div className="flex items-center justify-between">
+      <Skeleton className="h-6 w-1/4" />
+      <Skeleton className="h-4 w-1/4" />
+    </div>
+    <div className="flex items-center space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700">
+      <Skeleton className="h-9 w-2/3 rounded-lg" />
+      <Skeleton className="h-9 w-10 rounded-lg" />
+    </div>
+  </div>
+)
+
+const PageSkeleton = () => (
+  <div className="max-w-7xl mx-auto p-6 space-y-8 animate-pulse">
+    <header className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <Skeleton className="h-9 w-48" />
+      <div className="flex items-center gap-3">
+        <Skeleton className="h-10 w-32 rounded-full" />
+        <Skeleton className="h-10 w-40 rounded-full" />
+      </div>
+    </header>
+    <div className="flex justify-center my-8">
+      <Skeleton className="h-12 w-full sm:w-[65%] rounded-full" />
+    </div>
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {[...Array(6)].map((_, index) => <ListingCardSkeleton key={index} />)}
+    </div>
+  </div>
+)
+
 export default function MarketplacePage() {
   const [listings, setListings] = useState([])
   const [myListings, setMyListings] = useState([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isSearching, setIsSearching] = useState(false)
   const [error, setError] = useState(null)
   
-  // State for the combined search bar
   const [searchTerm, setSearchTerm] = useState("")
   const [locationFilter, setLocationFilter] = useState("")
   const [searchType, setSearchType] = useState("crop_name") 
@@ -31,15 +71,19 @@ export default function MarketplacePage() {
   const [isMyListingsDialogOpen, setIsMyListingsDialogOpen] = useState(false)
   const [editingListing, setEditingListing] = useState(null)
 
+  const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
+  const [reportingListing, setReportingListing] = useState(null)
+
   useEffect(() => {
-    fetchListings()
+    fetchListings(true)
   }, [])
 
-  const fetchListings = async () => {
+  const fetchListings = async (isInitialLoad = false) => {
+    if (!isInitialLoad) setIsSearching(true)
+    
     try {
       setError(null)
       const params = new URLSearchParams()
-      // The fetch logic remains the same, it correctly handles empty strings
       if (searchTerm) params.append("crop_name", searchTerm)
       if (locationFilter) params.append("location", locationFilter)
       
@@ -52,7 +96,8 @@ export default function MarketplacePage() {
       console.error("Error fetching listings:", error)
       setError("Network error occurred while fetching listings")
     } finally {
-      setIsLoading(false)
+      if (isInitialLoad) setIsLoading(false)
+      setIsSearching(false)
     }
   }
 
@@ -67,10 +112,7 @@ export default function MarketplacePage() {
     }
   }
 
-  const handleSearch = () => {
-    setIsLoading(true)
-    fetchListings()
-  }
+  const handleSearch = () => fetchListings()
   
   const handleSearchTypeChange = (newType) => {
     setSearchType(newType)
@@ -79,11 +121,8 @@ export default function MarketplacePage() {
   }
 
   const handleSearchInputChange = (value) => {
-    if (searchType === "crop_name") {
-      setSearchTerm(value)
-    } else {
-      setLocationFilter(value)
-    }
+    if (searchType === "crop_name") setSearchTerm(value)
+    else setLocationFilter(value)
   }
 
   const handleSaveListing = async (formData) => {
@@ -142,9 +181,23 @@ export default function MarketplacePage() {
     setIsCreateDialogOpen(open)
   }
 
+  const handleOpenReportDialog = (listing) => {
+    setReportingListing(listing)
+    setIsReportDialogOpen(true)
+  }
+
+  const handleCloseReportDialog = () => {
+    setReportingListing(null)
+    setIsReportDialogOpen(false)
+  }
+
+  const handleReportSubmit = () => {
+    // Report submitted successfully, maybe refresh data or show notification
+    console.log("Report submitted successfully")
+  }
+
   const formatTimeAgo = (dateString) => {
-    // @ts-ignore
-    const diffInSeconds = Math.floor((new Date() - new Date(dateString)) / 1000)
+    const diffInSeconds = Math.floor((new Date().getTime() - new Date(dateString).getTime()) / 1000)
     if (diffInSeconds < 60) return "Just now"
     if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`
     if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h ago`
@@ -153,23 +206,8 @@ export default function MarketplacePage() {
 
   if (isLoading) {
     return (
-      <div className="max-w-7xl mx-auto p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <Skeleton className="h-9 w-48" />
-          <div className="flex gap-3"><Skeleton className="h-10 w-32" /><Skeleton className="h-10 w-32" /></div>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[...Array(6)].map((_, index) => (
-            <div key={index} className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700">
-              <div className="flex items-start gap-4 mb-4">
-                <Skeleton className="w-12 h-12 rounded-full" />
-                <div className="flex-1 space-y-2"><Skeleton className="h-6 w-3/4" /><Skeleton className="h-4 w-1/2" /></div>
-              </div>
-              <Skeleton className="h-4 w-full mb-2" /><Skeleton className="h-4 w-2/3 mb-4" />
-              <div className="flex justify-between items-center"><Skeleton className="h-6 w-20" /><Skeleton className="h-4 w-16" /></div>
-            </div>
-          ))}
-        </div>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <PageSkeleton />
       </div>
     )
   }
@@ -193,18 +231,19 @@ export default function MarketplacePage() {
 
         <MyListingsDialog open={isMyListingsDialogOpen} onOpenChange={handleOpenMyListings} myListings={myListings} onEdit={handleEdit} onDelete={handleDelete} />
         <CreateListingDialog open={isCreateDialogOpen} onOpenChange={handleOpenCreateDialog} editingListing={editingListing} onSave={handleSaveListing} cropEmojis={cropEmojis} />
+        <ReportListingDialog 
+          open={isReportDialogOpen} 
+          onOpenChange={handleCloseReportDialog} 
+          listing={reportingListing} 
+          onReportSubmit={handleReportSubmit}
+        />
 
-        {/* SEARCH BAR */}
         <div className="flex justify-center my-8">
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-[65%]">
             <div className="flex w-full items-center border border-gray-300 dark:border-gray-600 rounded-full overflow-hidden bg-white dark:bg-gray-800 shadow-sm focus-within:ring-2 focus-within:ring-green-500 transition-all">
               <div className="relative">
-                <select
-                  value={searchType}
-                  onChange={(e) => handleSearchTypeChange(e.target.value)}
-                  className="h-full pl-4 pr-8 py-2 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-r border-gray-300 dark:border-gray-600 text-sm font-medium appearance-none focus:outline-none cursor-pointer"
-                >
-                  <option  value="crop_name">Crop</option>
+                <select value={searchType} onChange={(e) => handleSearchTypeChange(e.target.value)} className="h-full pl-4 pr-8 py-2 bg-gray-50 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-r border-gray-300 dark:border-gray-600 text-sm font-medium appearance-none focus:outline-none cursor-pointer">
+                  <option value="crop_name">Crop</option>
                   <option value="location">Location</option>
                 </select>
                 <FiChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
@@ -235,74 +274,91 @@ export default function MarketplacePage() {
             <p className="text-red-600 dark:text-red-400">{error}</p>
           </div>
         )}
+        
+        {isSearching && (
+            <div className="text-center py-10">
+                <p className="text-gray-500 dark:text-gray-400 font-medium mb-6">Searching for listings...</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {[...Array(6)].map((_, index) => <ListingCardSkeleton key={index} />)}
+                </div>
+            </div>
+        )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
-            {listings.map((listing, index) => (
+            {!isSearching && listings.map((listing, index) => (
               <motion.div
                 key={listing.id}
                 layout
-                initial={{ opacity: 0, y: 20, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: -20, scale: 0.98 }}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
                 transition={{ duration: 0.3, delay: index * 0.05 }}
-                className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col"
+                className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-lg hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden"
               >
-                <div className="flex items-start gap-4 mb-4">
-                  <div className="text-4xl bg-gray-100 dark:bg-gray-700 p-2 rounded-lg">{getCropEmoji(listing.crop_name)}</div>
-                  <div className="flex-1 min-w-0">
-                    <h3 className="text-xl font-bold text-gray-900 dark:text-white truncate">{listing.crop_name}</h3>
-                    <div className="flex items-center gap-2 mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      {listing.seller_profile_pic ? (
-                        <div className="w-5 h-5 rounded-full overflow-hidden flex-shrink-0">
-                          <Image
-                            src={listing.seller_profile_pic}
-                            alt={listing.seller_name}
-                            width={20}
-                            height={20}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ) : (
-                        <FiUser className="h-4 w-4 flex-shrink-0" />
-                      )}
-                      <Link
-                        href={`/profile/${listing.user_id}`}
-                        className="truncate text-green-700 dark:text-green-400 hover:underline"
-                      >
-                        {listing.seller_name}
-                      </Link>
+                {listing.images && listing.images.length > 0 ? (
+                  <div className="relative w-full h-48 bg-gray-100 dark:bg-gray-700">
+                    <Image src={listing.images[0]} alt={listing.crop_name} fill className="object-cover" />
+                  </div>
+                ) : (
+                  <div className="h-48 flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-5xl">
+                    {getCropEmoji(listing.crop_name)}
+                  </div>
+                )}
+
+                <div className="p-4 flex flex-col flex-grow">
+                  <div className="flex justify-between items-start gap-2">
+                    <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                      <span className="mr-2">{getCropEmoji(listing.crop_name)}</span>
+                      {listing.crop_name}
+                    </h3>
+                    <div className="text-right flex-shrink-0">
+                      <div className="text-lg font-bold text-green-600 dark:text-green-400">৳{listing.price_per_unit}</div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 -mt-1">per {listing.unit}</p>
                     </div>
                   </div>
-                </div>
-                
-                <div className="flex-grow space-y-4">
-                  {listing.description && <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">{listing.description}</p>}
                   
-                  <div>
-                    <div className="text-2xl font-bold text-green-600 dark:text-green-400 mb-1">৳{listing.price_per_unit}<span className="text-sm font-normal text-gray-500 dark:text-gray-400">/{listing.unit}</span></div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">Available: {listing.quantity_available} {listing.unit}</p>
-                  </div>
+                  {listing.description && <p className="text-sm text-gray-600 dark:text-gray-400 mt-2 line-clamp-2">{listing.description}</p>}
 
-                  {listing.location && <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400"><FiMapPin className="h-4 w-4 flex-shrink-0" /><span>{listing.location}</span></div>}
-                  
-                  <div className="space-y-2">
-                    {listing.contact_phone && <div className="flex items-center gap-2 text-sm"><FiPhone className="h-4 w-4 text-gray-400" /><a href={`tel:${listing.contact_phone}`} className="text-green-600 hover:underline">{listing.contact_phone}</a></div>}
-                    {listing.contact_email && <div className="flex items-center gap-2 text-sm"><FiMail className="h-4 w-4 text-gray-400" /><a href={`mailto:${listing.contact_email}`} className="text-blue-600 hover:underline truncate">{listing.contact_email}</a></div>}
+                  <div className="flex-grow space-y-3 text-sm text-gray-700 dark:text-gray-300 mt-4">
+                    <p><strong className="font-medium text-gray-500 dark:text-gray-400">Available:</strong> {listing.quantity_available} {listing.unit}</p>
+                    {listing.location && <div className="flex items-center gap-2"><FiMapPin className="text-gray-400" /><span>{listing.location}</span></div>}
+                    {listing.contact_phone && <div className="flex items-center gap-2"><FiPhone className="text-gray-400" /><a href={`tel:${listing.contact_phone}`} className="text-green-600 hover:underline">{listing.contact_phone}</a></div>}
+                    {listing.contact_email && <div className="flex items-center gap-2"><FiMail className="text-gray-400" /><a href={`mailto:${listing.contact_email}`} className="text-blue-600 hover:underline truncate">{listing.contact_email}</a></div>}
                   </div>
-                </div>
-                
-                <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center gap-1.5"><FiClock className="h-3 w-3" /><span>{formatTimeAgo(listing.created_at)}</span></div>
-                  {listing.seller_area && <span>{listing.seller_area}</span>}
+                  
+                  <div className="mt-auto pt-4">
+                    <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400 border-t border-gray-200 dark:border-gray-700 pt-3">
+                      <Link href={`/profile/${listing.user_id}`} className="flex items-center gap-2 min-w-0">
+                        {listing.seller_profile_pic ? (
+                          <Image src={listing.seller_profile_pic} alt={listing.seller_name} width={24} height={24} className="w-6 h-6 rounded-full object-cover flex-shrink-0" />
+                        ) : (
+                          <FiUser className="h-5 w-5 flex-shrink-0 text-gray-400" />
+                        )}
+                        <span className="truncate text-green-700 dark:text-green-400 hover:underline">{listing.seller_name}</span>
+                      </Link>
+                      <div className="flex items-center gap-1.5 flex-shrink-0"><FiClock /><span>{formatTimeAgo(listing.created_at)}</span></div>
+                    </div>
+                    <div className="flex justify-end gap-2 mt-4 ">
+                      <button className=" cursor-pointer flex items-center justify-center gap-2 px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-full hover:bg-green-700 transition-colors shadow-sm">
+                        <FiMessageSquare className="h-4 w-4" /> Message
+                      </button>
+                      <button 
+                        onClick={() => handleOpenReportDialog(listing)}
+                        className="cursor-pointer flex-shrink-0 flex items-center justify-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                      >
+                        <FiFlag className="h-4 w-4 mr-1" /> Report
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </AnimatePresence>
         </div>
 
-        {!isLoading && listings.length === 0 && !error && (
-          <div className="text-center py-16 px-6 bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700">
+        {!isLoading && !isSearching && listings.length === 0 && !error && (
+          <div className="text-center py-16 px-6 bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 col-span-full">
             <FiShoppingCart className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
             <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No listings found</h3>
             <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">{searchTerm || locationFilter ? "Try adjusting your search or filter to find what you're looking for." : "There are currently no listings. Why not be the first to sell your crops?"}</p>

@@ -100,7 +100,7 @@ export const marketplaceModel = {
   },
 
   // Update listing
-  async updateListing(listingId, userId, updateData) {
+async updateListing(listingId, userId, updateData) {
     const {
       crop_name,
       description,
@@ -110,7 +110,8 @@ export const marketplaceModel = {
       location,
       contact_phone,
       contact_email,
-      status
+      status,
+      images 
     } = updateData
 
     const result = await sql`
@@ -125,15 +126,15 @@ export const marketplaceModel = {
         contact_phone = COALESCE(${contact_phone}, contact_phone),
         contact_email = COALESCE(${contact_email}, contact_email),
         status = COALESCE(${status}, status),
+        images = COALESCE(${images}, images), 
         updated_at = NOW() AT TIME ZONE 'Asia/Dhaka'
       WHERE id = ${listingId} AND user_id = ${userId}
       RETURNING id, crop_name, description, price_per_unit, unit,
-                quantity_available, location, contact_phone, contact_email, status,
+                quantity_available, location, contact_phone, contact_email, images, status, -- <-- ADD 'images' HERE
                 updated_at AT TIME ZONE 'Asia/Dhaka' as updated_at
     `
     return result[0]
   },
-
   // Delete listing
   async deleteListing(listingId, userId) {
     const result = await sql`
