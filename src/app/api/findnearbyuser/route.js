@@ -12,8 +12,18 @@ export async function GET(request) {
     const { searchParams } = new URL(request.url)
     const location = searchParams.get("location")
     const area = searchParams.get("area")
+    const name = searchParams.get("name")
+    const nearby = searchParams.get("nearby")
 
-    const result = await userConnectionController.findFarmersByLocation(authToken, location, area)
+    let result;
+    
+    // If nearby=true, find farmers from same area/city as current user
+    if (nearby === "true") {
+      result = await userConnectionController.findNearbyFarmers(authToken)
+    } else {
+      // Otherwise search with provided filters
+      result = await userConnectionController.findFarmersByLocation(authToken, location, area, name)
+    }
 
     if (!result.success) {
       return NextResponse.json({ success: false, message: result.message }, { status: 400 })

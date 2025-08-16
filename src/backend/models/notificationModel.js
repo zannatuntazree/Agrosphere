@@ -83,4 +83,38 @@ export const notificationModel = {
     `
     return Number.parseInt(result[0]?.unread_count || 0)
   },
+
+  // Create broadcast notification for all users
+  async createBroadcastNotification(message) {
+    try {
+      // Get all active user IDs
+      const users = await sql`
+        SELECT id FROM users 
+        WHERE is_banned = FALSE
+      `
+
+      if (users.length === 0) {
+        return { notifiedCount: 0 }
+      }
+
+      // Create notifications for all users using a batch insert
+      const notifications = users.map(user => ({
+        user_id: user.id,
+        type: 'admin',
+        message: message
+      }))
+
+      for (const notification of notifications) {
+        await sql`
+          INSERT INTO notifications (user_id, type, message, created_at)
+          VALUES (${notification.user_id}, ${notification.type}, ${notification.message}, NOW() AT TIME ZONE 'Asia/Dhaka')
+        `
+      }
+
+      return { notifiedCount: users.length }
+    } catch (error) {
+      console.error("Broadcast notification error:", error)
+      throw error
+    }
+  },
 }

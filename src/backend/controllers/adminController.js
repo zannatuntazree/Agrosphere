@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs"
 import { adminModel } from "../models/adminModel.js"
+import { notificationController } from "./notificationController.js" 
 
 export const adminController = {
   // Admin login
@@ -64,6 +65,11 @@ export const adminController = {
   createReport: async (reporterId, reportedUserId, reportReason, reportDetails) => {
     try {
       const report = await adminModel.createReport(reporterId, reportedUserId, reportReason, reportDetails)
+      notificationController.createNotificationForUser(
+        reportedUserId,
+        "report",
+        `Someone reported you for : ${reportReason}`
+      )
       return { success: true, data: report, message: "Report submitted successfully" }
     } catch (error) {
       return { success: false, message: error.message }

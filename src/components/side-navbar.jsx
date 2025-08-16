@@ -48,11 +48,11 @@ const navigationItems = [
     href: "/nearby",
     icon: FiUsers,
   },
-  {
-    title: "Weather",
-    href: "/weather",
-    icon: FiCloud,
-  },
+  // {
+  //   title: "Weather",
+  //   href: "/weather",
+  //   icon: FiCloud,
+  // },
   {
     title: "Notifications",
     href: "/notifications",

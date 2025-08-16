@@ -31,14 +31,6 @@ export const authController = {
         "Welcome to Agrosphere! 🌱 Start exploring our features to manage your farm effectively.",
       
       )
-        // await notificationController.createNotificationForUser(
-        // newUser.id,
-        // "welcome",
-        // "Welcome 2 to Agrosphere! 🌱 Start exploring our features to manage your farm effectively.",)
-        // await notificationController.createNotificationForUser(
-        // newUser.id,
-        // "welcome",
-        // "Welcome 3 to Agrosphere! 🌱 Start exploring our features to manage your farm effectively.",)
 
       return {
         success: true,

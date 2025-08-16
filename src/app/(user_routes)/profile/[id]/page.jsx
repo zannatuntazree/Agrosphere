@@ -1,72 +1,191 @@
 // @ts-nocheck
 "use client"
 import { useState, useEffect } from "react"
-import { useParams } from "next/navigation"
+import { useRouter, useParams } from "next/navigation"
 import { FiEdit, FiMail, FiPhone, FiMapPin, FiCalendar, FiUser, FiMap, FiLayers, FiMessageSquare,  FiTrendingUp } from "react-icons/fi"
 import { FaSeedling } from "react-icons/fa";
+import { FaUserPlus } from "react-icons/fa6"
+import { BiSolidMessageRoundedDots } from "react-icons/bi"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/components/ui/use-toast"
 import EditProfileDialog from "./_components/editprofile"
 import Image from "next/image";
+import { getUserFromStorage } from "@/lib/auth"
 
 export default function ProfilePage() {
+  const router = useRouter()
   const params = useParams()
-  const userId = params.id
+  const { toast } = useToast()
+  
   const [user, setUser] = useState(null)
   const [currentUser, setCurrentUser] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [requestSent, setRequestSent] = useState(false)
+  const [connections, setConnections] = useState([])
+  const [connectionRequests, setConnectionRequests] = useState([])
   const [isOwnProfile, setIsOwnProfile] = useState(false)
+  const [connectionStatus, setConnectionStatus] = useState(null) 
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        // First get current user to check if this is their own profile
-        const currentUserResponse = await fetch("/api/user/profile", { credentials: "include" })
-        if (currentUserResponse.ok) {
-          const currentUserResult = await currentUserResponse.json()
-          if (currentUserResult.success) {
-            setCurrentUser(currentUserResult.user)
-            setIsOwnProfile(currentUserResult.user.id === parseInt(userId))
-            
-            // If viewing own profile, use the current user data
-            if (currentUserResult.user.id === parseInt(userId)) {
-              setUser(currentUserResult.user)
-              setIsLoading(false)
-              return
-            }
-          }
-        }
+    const loggedInUser = getUserFromStorage()
+    if (loggedInUser) {
+      setCurrentUser(loggedInUser)
+      setIsOwnProfile(loggedInUser.id.toString() === params.id)
+    }
+    fetchUserProfile(loggedInUser)
+    fetchConnectionRequests()
+  }, [params.id])
 
-        // If viewing another user's profile, fetch their data
-        const response = await fetch(`/api/user/profile?userId=${userId}`, { credentials: "include" })
-        if (response.ok) {
-          const result = await response.json()
-          if (result.success) {
-            setUser(result.user)
-          } else {
-            console.error("API error fetching profile:", result.message)
-            setUser(null)
-          }
+  // Separate useEffect for fetching connections after isOwnProfile is determined
+  useEffect(() => {
+    if (currentUser !== null) { // Only fetch connections after currentUser is set
+      fetchConnections()
+    }
+  }, [params.id, isOwnProfile, currentUser])
+
+
+  useEffect(() => {
+    checkConnectionStatus()
+  }, [connections, connectionRequests, params.id])
+
+  const checkConnectionStatus = () => {
+    if (!params.id) return
+
+    // Check if already connected
+    const isConnected = connections.some(conn => 
+      conn.friend_info?.id?.toString() === params.id.toString()
+    )
+    if (isConnected) {
+      setConnectionStatus('connected')
+      return
+    }
+
+    // Check if request already sent or received
+    const existingRequest = connectionRequests.find(req => 
+      (req.requester_id?.toString() === params.id.toString() || 
+       req.receiver_id?.toString() === params.id.toString()) &&
+      req.status === 'pending'
+    )
+
+    if (existingRequest) {
+      if (existingRequest.requester_id?.toString() === currentUser?.id?.toString()) {
+        setConnectionStatus('sent')
+        setRequestSent(true)
+      } else {
+        setConnectionStatus('pending')
+      }
+    } else {
+      setConnectionStatus(null)
+    }
+  }
+
+  const fetchConnectionRequests = async () => {
+    try {
+      const response = await fetch("/api/user-connections?type=all", {
+        credentials: "include"
+      })
+      const result = await response.json()
+      if (response.ok && result.success) {
+        setConnectionRequests(result.requests || [])
+      }
+    } catch (error) {
+      console.error("Error fetching connection requests:", error)
+    }
+  }
+
+  const fetchUserProfile = async (loggedInUser) => {
+    try {
+      let url = "/api/user/profile"
+      
+      // If not own profile, add userId query param
+      if (loggedInUser && loggedInUser.id.toString() !== params.id) {
+        url += `?userId=${params.id}`
+      }
+
+      const response = await fetch(url, { credentials: "include" })
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          setUser(result.user)
         } else {
-          console.error("HTTP error fetching profile:", response.status)
+          console.error("API error fetching profile:", result.message)
           setUser(null)
         }
-      } catch (error) {
-        console.error("Network error fetching profile:", error)
+      } else {
+        console.error("HTTP error fetching profile:", response.status)
         setUser(null)
-      } finally {
-        setIsLoading(false)
       }
+    } catch (error) {
+      console.error("Network error fetching profile:", error)
+      setUser(null)
+    } finally {
+      setIsLoading(false)
     }
-    fetchUserProfile()
-  }, [])
+  }
+
+  const fetchConnections = async () => {
+    try {
+      // If viewing another user's profile, add userId parameter
+      const url = isOwnProfile 
+        ? "/api/user-connections/friends" 
+        : `/api/user-connections/friends?userId=${params.id}`;
+      
+      const response = await fetch(url, {
+        credentials: "include"
+      })
+      const result = await response.json()
+      if (response.ok && result.success) {
+        setConnections(result.connections || [])
+      }
+    } catch (error) {
+      console.error("Error fetching connections:", error)
+    }
+  }
+
+  const handleConnect = async () => {
+    try {
+      const response = await fetch("/api/user-connections", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ receiverId: params.id })
+      })
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        toast({
+          title: "Success",
+          description: "Connection request sent!",
+        })
+        setConnectionStatus('sent')
+        setRequestSent(true)
+        fetchConnectionRequests() // Refresh connection requests
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to send request",
+          variant: "destructive"
+        })
+      }
+    } catch (error) {
+      toast({
+        title: "Network Error",
+        description: "A network error occurred.",
+        variant: "destructive"
+      })
+    }
+  }
+
+  const handleMessage = () => {
+    router.push("/message")
+  }
 
   const handleProfileUpdate = (updatedUser) => {
     setUser(updatedUser)
     if (typeof window !== "undefined") {
       localStorage.setItem("user", JSON.stringify(updatedUser))
     }
-    
   }
 
   if (isLoading) {
@@ -170,18 +289,89 @@ export default function ProfilePage() {
                     <span>{user.email}</span>
                   </div>
                 )}
-                <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
-                  <FiCalendar className="h-4 w-4" />
-                  <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
-                </div>
+                {user.created_at && (
+                  <div className="flex items-center justify-center sm:justify-start gap-2 mt-1 text-sm text-gray-600 dark:text-gray-400">
+                    <FiCalendar className="h-4 w-4" />
+                    <span>Joined {new Date(user.created_at).toLocaleDateString()}</span>
+                  </div>
+                )}
               </div>
-              {isOwnProfile && (
+              
+              {isOwnProfile ? (
                 <button 
                   onClick={() => setIsEditDialogOpen(true)} 
                   className="inline-flex items-center justify-center rounded-full text-sm font-medium h-10 px-4 py-2 bg-green-600 text-white  hover:-translate-y-1 cursor-pointer transition-all duration-300 mt-4 sm:mt-0 shadow-md hover:shadow-lg"
                 >
                   <FiEdit className="mr-2 h-4 w-4" /> Edit Profile
                 </button>
+              ) : (
+                <div className="flex items-start flex-col md:flex-row gap-4 mt-4 sm:mt-0">
+                  {/* Connection count - enhanced styling */}
+                  <div 
+                    className="text-center mx-auto flex-shrink-0 mt-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-green-200/50 dark:border-slate-700/50 cursor-pointer hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300"
+                    onClick={() => router.push('/nearby')}
+                  >
+                    <div className="text-2xl font-bold text-gray-900 dark:text-white">
+                      {connections.length}
+                    </div>
+                    <div className="text-xs text-gray-600 dark:text-gray-400 font-medium">
+                      connections
+                    </div>
+                  </div>
+                 
+                  <div className="flex flex-row md:flex-col gap-3 min-w-[140px]">
+                    <button
+                      onClick={handleConnect}
+                      disabled={connectionStatus === 'sent' || connectionStatus === 'connected' || connectionStatus === 'pending'}
+                      className={`
+                        inline-flex items-center justify-center rounded-full text-sm font-semibold
+                        h-11 w-full px-4 py-2 transition-all duration-300 shadow-lg hover:shadow-xl
+                        transform hover:scale-[1.02] active:scale-[0.98]
+                        ${connectionStatus === 'sent' || connectionStatus === 'connected' || connectionStatus === 'pending'
+                          ? 'bg-gradient-to-r from-green-400 to-emerald-500 text-white cursor-default'
+                          : 'bg-gradient-to-r from-blue-500 to-indigo-600 text-white hover:from-blue-600 hover:to-indigo-700 cursor-pointer'
+                        }
+                      `}
+                    >
+                      {connectionStatus === 'connected' ? (
+                        <>
+                          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="whitespace-nowrap">Connected</span>
+                        </>
+                      ) : connectionStatus === 'sent' ? (
+                        <>
+                          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                          <span className="whitespace-nowrap">Request Sent</span>
+                        </>
+                      ) : connectionStatus === 'pending' ? (
+                        <>
+                          <svg className="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                          </svg>
+                          <span className="whitespace-nowrap">Request Received</span>
+                        </>
+                      ) : (
+                        <>
+                          <FaUserPlus className="w-4 h-4 mr-2 flex-shrink-0" />
+                          <span className="whitespace-nowrap">Connect</span>
+                        </>
+                      )}
+                    </button>
+
+                    {/* Message button */}
+                    <button 
+                      onClick={handleMessage}
+                      className="inline-flex items-center justify-center rounded-full text-sm font-semibold h-11 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-teal-400 text-white hover:from-emerald-600 hover:to-teal-700 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
+                    >
+                      <BiSolidMessageRoundedDots className="w-4 h-4 mr-2 flex-shrink-0" />
+                      <span className="whitespace-nowrap">Message</span>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
           </div>

@@ -17,16 +17,18 @@ export const adminModel = {
   // Get dashboard stats
   getDashboardStats: async () => {
     try {
-      const [usersResult, landsResult, expensesResult] = await Promise.all([
+      const [usersResult, landsResult, expensesResult, marketplaceResult] = await Promise.all([
         sql`SELECT COUNT(*) as count FROM users`,
         sql`SELECT COUNT(*) as count FROM lands`,
         sql`SELECT COUNT(*) as count FROM expenses_earnings`,
+        sql`SELECT COUNT(*) as count FROM marketplace_listings`,
       ])
 
       return {
         totalUsers: Number.parseInt(usersResult[0].count),
         totalLands: Number.parseInt(landsResult[0].count),
         totalExpenses: Number.parseInt(expensesResult[0].count),
+        totalMarketplaceListings: Number.parseInt(marketplaceResult[0].count),
       }
     } catch (error) {
       throw error

@@ -84,29 +84,30 @@ export const userController = {
 
   async getUserProfileById(currentUserId, targetUserId) {
     try {
-      // First verify that the current user is authenticated
+      // verify that the current user is authenticated
       const currentUser = await userModel.findUserById(currentUserId)
       if (!currentUser) {
         throw new Error("Unauthorized")
       }
 
-      // Get the target user's profile
+      //user's profile
       const user = await userModel.findUserById(targetUserId)
       if (!user) {
         throw new Error("User not found")
       }
 
-      // Get land stats for the target user
+      // land stats for the target user
       const landStats = await landModel.getLandStats(targetUserId)
       const totalLands = landStats.reduce((sum, stat) => sum + Number.parseInt(stat.type_count || 0), 0)
       const totalArea = landStats.reduce((sum, stat) => sum + Number.parseFloat(stat.total_area || 0), 0)
 
-      // Return public profile information (excluding sensitive data like email for privacy)
+      // public profile information 
       return {
         success: true,
         user: {
           id: user.id,
           name: user.name,
+          email: user.email,
           profile_pic: user.profile_pic,
           city: user.city,
           area: user.area,
@@ -114,6 +115,7 @@ export const userController = {
           phone: user.phone,
           age: user.age,
           preferred_crops: user.preferred_crops,
+          created_at: user.created_at, 
           landStats: {
             totalLands,
             totalArea: totalArea.toFixed(1),

@@ -10,7 +10,11 @@ export async function GET(request) {
       return NextResponse.json({ success: false, message: "Unauthorized" }, { status: 401 })
     }
 
-    const result = await userConnectionController.getUserConnections(authToken)
+    // Get userId from query parameters if provided (for viewing other user's connections)
+    const { searchParams } = new URL(request.url)
+    const userId = searchParams.get("userId")
+
+    const result = await userConnectionController.getUserConnections(authToken, userId)
 
     if (!result.success) {
       return NextResponse.json({ success: false, message: result.message }, { status: 400 })

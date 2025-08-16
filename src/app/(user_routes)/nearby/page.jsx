@@ -2,123 +2,90 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { MapPin, Users, UserPlus, Clock, Check, X, Phone, Search } from "lucide-react"
+import { motion, AnimatePresence } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
+import { getUserFromStorage } from "@/lib/auth"
+
+import FindFarmersTab from "./_components/find-farmers"
+import RequestsTab from "./_components/request-tab"
+import ConnectionsTab from "./_components/my-connections"
+
+const tabs = [
+  { id: "nearby", label: "Find Farmers" },
+  { id: "requests", label: "Requests" },
+  { id: "connections", label: "My Connections" },
+];
 
 export default function NearbyPage() {
   const router = useRouter()
   const { toast } = useToast()
+  const [currentUser, setCurrentUser] = useState(null)
   const [farmers, setFarmers] = useState([])
   const [connectionRequests, setConnectionRequests] = useState([])
   const [connections, setConnections] = useState([])
   const [isLoading, setIsLoading] = useState(false)
-  const [searchLocation, setSearchLocation] = useState("")
-  const [searchArea, setSearchArea] = useState("")
+  const [searchType, setSearchType] = useState("area")
+  const [searchValue, setSearchValue] = useState("")
   const [activeTab, setActiveTab] = useState("nearby")
 
   useEffect(() => {
+    const user = getUserFromStorage()
+    if (user) {
+      setCurrentUser(user)
+      fetchNearbyFarmers()
+    }
     fetchConnectionRequests()
     fetchConnections()
-    fetchAllFarmers() // Load all farmers initially
   }, [])
 
-  const fetchAllFarmers = async () => {
+  const fetchData = async (url, setData, entityName) => {
     try {
       setIsLoading(true)
-      const response = await fetch("/api/findnearbyuser", {
-        credentials: "include"
-      })
+      const response = await fetch(url, { credentials: "include" })
       const result = await response.json()
 
       if (response.ok && result.success) {
-        setFarmers(result.farmers || [])
+        setData(result.farmers || result.requests || result.connections || [])
       } else {
         toast({
           title: "Error",
-          description: result.message || "Failed to fetch farmers",
+          description: result.message || `Failed to fetch ${entityName}`,
           variant: "destructive"
         })
       }
     } catch (error) {
-      console.error("Error fetching farmers:", error)
+      console.error(`Error fetching ${entityName}:`, error)
       toast({
         title: "Network Error",
-        description: "Network error occurred",
+        description: "A network error occurred.",
         variant: "destructive"
       })
     } finally {
       setIsLoading(false)
     }
   }
+
+  const fetchNearbyFarmers = () => fetchData("/api/findnearbyuser?nearby=true", setFarmers, "nearby farmers")
+  const fetchConnectionRequests = () => fetchData("/api/user-connections?type=all", setConnectionRequests, "connection requests")
+  const fetchConnections = () => fetchData("/api/user-connections/friends", setConnections, "connections")
 
   const searchFarmers = async () => {
-    try {
-      setIsLoading(true)
-      const params = new URLSearchParams()
-      if (searchLocation) params.append("location", searchLocation)
-      if (searchArea) params.append("area", searchArea)
-      
-      const response = await fetch(`/api/findnearbyuser?${params}`, {
-        credentials: "include"
-      })
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        setFarmers(result.farmers || [])
-      } else {
-        toast({
-          title: "Error",
-          description: result.message || "Failed to search farmers",
-          variant: "destructive"
-        })
-      }
-    } catch (error) {
-      console.error("Error searching farmers:", error)
-      toast({
-        title: "Network Error",
-        description: "Network error occurred",
-        variant: "destructive"
-      })
-    } finally {
-      setIsLoading(false)
+    if (!searchValue.trim()) {
+      fetchNearbyFarmers()
+      return
     }
+    const params = new URLSearchParams({ [searchType]: searchValue.trim() }).toString()
+    fetchData(`/api/findnearbyuser?${params}`, setFarmers, "farmers")
   }
-
-  const fetchConnectionRequests = async () => {
-    try {
-      const response = await fetch("/api/user-connections?type=all", {
-        credentials: "include"
-      })
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        setConnectionRequests(result.requests || [])
-      }
-    } catch (error) {
-      console.error("Error fetching connection requests:", error)
+  
+  const refreshAllData = () => {
+    if (searchValue.trim()) {
+        searchFarmers()
+    } else {
+        fetchNearbyFarmers()
     }
-  }
-
-  const fetchConnections = async () => {
-    try {
-      const response = await fetch("/api/user-connections/friends", {
-        credentials: "include"
-      })
-      const result = await response.json()
-
-      if (response.ok && result.success) {
-        setConnections(result.connections || [])
-      }
-    } catch (error) {
-      console.error("Error fetching connections:", error)
-    }
+    fetchConnectionRequests()
+    fetchConnections()
   }
 
   const sendConnectionRequest = async (receiverId) => {
@@ -136,408 +103,155 @@ export default function NearbyPage() {
           title: "Success",
           description: "Connection request sent!",
         })
-        // Refresh the farmers list to reflect the new status
-        if (searchLocation || searchArea) {
-          searchFarmers()
-        } else {
-          fetchAllFarmers()
-        }
-        fetchConnectionRequests()
+        refreshAllData()
       } else {
         toast({
           title: "Error",
-          description: result.message || "Failed to send connection request",
+          description: result.message || "Failed to send request",
           variant: "destructive"
         })
       }
     } catch (error) {
-      console.error("Error sending connection request:", error)
       toast({
         title: "Network Error",
-        description: "Network error occurred",
+        description: "A network error occurred.",
         variant: "destructive"
       })
     }
   }
 
-  const respondToRequest = async (connectionId, response) => {
+  const respondToRequest = async (connectionId, responseType) => {
     try {
       const res = await fetch(`/api/user-connections/${connectionId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ response })
+        body: JSON.stringify({ response: responseType })
       })
       const result = await res.json()
 
       if (res.ok && result.success) {
         toast({
           title: "Success",
-          description: `Connection request ${response}!`,
+          description: `Connection request ${responseType}!`,
         })
-        fetchConnectionRequests()
-        fetchConnections()
-        // Refresh the farmers list
-        if (searchLocation || searchArea) {
-          searchFarmers()
-        } else {
-          fetchAllFarmers()
-        }
+        refreshAllData()
       } else {
         toast({
           title: "Error",
-          description: result.message || `Failed to ${response} connection request`,
+          description: result.message || `Failed to ${responseType} request`,
           variant: "destructive"
         })
       }
     } catch (error) {
-      console.error("Error responding to connection request:", error)
-      toast({
+       toast({
         title: "Network Error",
-        description: "Network error occurred",
+        description: "A network error occurred.",
         variant: "destructive"
       })
     }
   }
 
   const clearSearch = () => {
-    setSearchLocation("")
-    setSearchArea("")
-    fetchAllFarmers()
+    setSearchValue("")
+    fetchNearbyFarmers()
   }
 
   const navigateToProfile = (userId) => {
     router.push(`/profile/${userId}`)
   }
 
-  const getConnectionStatus = (user) => {
-    if (user.connection_status === 'pending') {
-      return user.request_direction === 'sent' ? 'Request Sent' : 'Request Received'
-    } else if (user.connection_status === 'accepted') {
-      return 'Connected'
-    }
-    return null
-  }
-
-  const canSendRequest = (user) => {
-    return !user.connection_status
-  }
+  const receivedRequestsCount = connectionRequests.filter(
+    req => req.request_direction === 'received' && req.status === 'pending'
+  ).length
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center gap-2 mb-6">
-        <Users className="h-6 w-6 text-green-600" />
-        <h1 className="text-3xl font-bold">Find Farmers</h1>
+    <div className="max-w-7xl mx-auto p-6 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">
+            Connect with Users
+          </h1>
+        </div>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="nearby">Find Farmers</TabsTrigger>
-          <TabsTrigger value="requests">Requests</TabsTrigger>
-          <TabsTrigger value="connections">My Connections</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="nearby" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Search className="h-5 w-5" />
-                Search for Farmers
-              </CardTitle>
-              <CardDescription>
-                Find farmers by location or browse all farmers
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <Label htmlFor="location">Location (City, District)</Label>
-                  <Input
-                    id="location"
-                    placeholder="e.g., Dhaka, Chittagong"
-                    value={searchLocation}
-                    onChange={(e) => setSearchLocation(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="area">Area (Optional)</Label>
-                  <Input
-                    id="area"
-                    placeholder="e.g., Dhanmondi, Gulshan"
-                    value={searchArea}
-                    onChange={(e) => setSearchArea(e.target.value)}
-                  />
-                </div>
-                <div className="flex items-end gap-2">
-                  <Button 
-                    onClick={searchFarmers}
-                    disabled={isLoading}
-                    className="flex-1"
-                  >
-                    <Search className="h-4 w-4 mr-2" />
-                    Search
-                  </Button>
-                  <Button 
-                    onClick={clearSearch}
-                    disabled={isLoading}
-                    variant="outline"
-                  >
-                    Clear
-                  </Button>
-                </div>
-              </div>
-
-              {isLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {[...Array(6)].map((_, i) => (
-                    <div key={i} className="h-48 bg-gray-200 animate-pulse rounded-lg" />
-                  ))}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {farmers.map((farmer) => (
-                    <Card key={farmer.id} className="hover:shadow-md transition-shadow cursor-pointer">
-                      <CardContent className="p-4">
-                        <div 
-                          className="flex items-start gap-3" 
-                          onClick={() => navigateToProfile(farmer.id)}
-                        >
-                          <Avatar>
-                            <AvatarImage src={farmer.profile_pic} />
-                            <AvatarFallback>
-                              {farmer.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate hover:text-blue-600">{farmer.name}</h3>
-                            <p className="text-sm text-gray-600 flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {farmer.area && farmer.city ? `${farmer.area}, ${farmer.city}` : farmer.area || farmer.city || 'Location not specified'}
-                            </p>
-                            {farmer.country && (
-                              <p className="text-sm text-gray-500">
-                                {farmer.country}
-                              </p>
-                            )}
-                            {farmer.phone && (
-                              <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                                <Phone className="h-3 w-3" />
-                                {farmer.phone}
-                              </p>
-                            )}
-                            {farmer.age && (
-                              <p className="text-sm text-gray-500">
-                                Age: {farmer.age}
-                              </p>
-                            )}
-                            {farmer.preferred_crops && farmer.preferred_crops.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {farmer.preferred_crops.slice(0, 2).map((crop, index) => (
-                                  <Badge key={index} variant="secondary" className="text-xs">
-                                    {crop}
-                                  </Badge>
-                                ))}
-                                {farmer.preferred_crops.length > 2 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{farmer.preferred_crops.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-3 flex gap-2" onClick={(e) => e.stopPropagation()}>
-                          {canSendRequest(farmer) ? (
-                            <Button 
-                              size="sm" 
-                              onClick={() => sendConnectionRequest(farmer.id)}
-                              className="flex-1"
-                            >
-                              <UserPlus className="h-4 w-4 mr-1" />
-                              Connect
-                            </Button>
-                          ) : (
-                            <Badge 
-                              variant={farmer.connection_status === 'accepted' ? 'default' : 'secondary'}
-                              className="flex-1 justify-center py-1"
-                            >
-                              {getConnectionStatus(farmer)}
-                            </Badge>
-                          )}
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-
-              {farmers.length === 0 && !isLoading && (
-                <div className="text-center p-8 bg-gray-50 rounded-lg">
-                  <Users className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-600">
-                    {searchLocation || searchArea ? 'No farmers found in this location' : 'No farmers found'}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    {searchLocation || searchArea ? 'Try searching a different location' : 'Try using the search feature above'}
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="requests" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Clock className="h-5 w-5" />
-                Connection Requests
-              </CardTitle>
-              <CardDescription>
-                Manage your pending connection requests
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {connectionRequests.length === 0 ? (
-                <div className="text-center p-8 bg-gray-50 rounded-lg">
-                  <Clock className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-600">No connection requests</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {connectionRequests.map((request) => (
-                    <div 
-                      key={request.id} 
-                      className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      <div 
-                        className="flex items-center gap-3 flex-1" 
-                        onClick={() => navigateToProfile(request.other_user_id)}
-                      >
-                        <Avatar>
-                          <AvatarImage src={request.other_user_profile_pic} />
-                          <AvatarFallback>
-                            {request.other_user_name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="font-semibold hover:text-blue-600">{request.other_user_name}</h3>
-                          <p className="text-sm text-gray-600">{request.other_user_area}</p>
-                          <p className="text-xs text-gray-500">
-                            {request.request_direction === 'sent' ? 'Request sent' : 'Request received'} • 
-                            {new Date(request.created_at).toLocaleDateString()}
-                          </p>
-                        </div>
-                      </div>
-                      <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
-                        <Badge variant={
-                          request.status === 'pending' ? 'secondary' :
-                          request.status === 'accepted' ? 'default' : 'destructive'
-                        }>
-                          {request.status}
-                        </Badge>
-                        {request.status === 'pending' && request.request_direction === 'received' && (
-                          <div className="flex gap-2">
-                            <Button 
-                              size="sm" 
-                              onClick={() => respondToRequest(request.id, 'accepted')}
-                            >
-                              <Check className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => respondToRequest(request.id, 'rejected')}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="connections" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Users className="h-5 w-5" />
-                My Connections
-              </CardTitle>
-              <CardDescription>
-                Farmers you're connected with
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {connections.length === 0 ? (
-                <div className="text-center p-8 bg-gray-50 rounded-lg">
-                  <Users className="h-12 w-12 mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-600">No connections yet</p>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Find nearby farmers to start connecting
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {connections.map((connection) => (
-                    <Card 
-                      key={connection.connection_id} 
-                      className="hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => navigateToProfile(connection.friend_info.id)}
-                    >
-                      <CardContent className="p-4">
-                        <div className="flex items-start gap-3">
-                          <Avatar>
-                            <AvatarImage src={connection.friend_info.profile_pic} />
-                            <AvatarFallback>
-                              {connection.friend_info.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate hover:text-blue-600">{connection.friend_info.name}</h3>
-                            <p className="text-sm text-gray-600 flex items-center gap-1">
-                              <MapPin className="h-3 w-3" />
-                              {connection.friend_info.area}, {connection.friend_info.city}
-                            </p>
-                            {connection.friend_info.phone && (
-                              <p className="text-sm text-gray-600 flex items-center gap-1 mt-1">
-                                <Phone className="h-3 w-3" />
-                                {connection.friend_info.phone}
-                              </p>
-                            )}
-                            <p className="text-xs text-gray-500 mt-2">
-                              Connected since {new Date(connection.connected_since).toLocaleDateString()}
-                            </p>
-                            {connection.friend_info.preferred_crops && connection.friend_info.preferred_crops.length > 0 && (
-                              <div className="flex flex-wrap gap-1 mt-2">
-                                {connection.friend_info.preferred_crops.slice(0, 2).map((crop, index) => (
-                                  <Badge key={index} variant="secondary" className="text-xs">
-                                    {crop}
-                                  </Badge>
-                                ))}
-                                {connection.friend_info.preferred_crops.length > 2 && (
-                                  <Badge variant="outline" className="text-xs">
-                                    +{connection.friend_info.preferred_crops.length - 2}
-                                  </Badge>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
+      {/* Tab Navigation*/}
+      <div className="relative w-full sm:w-[70%] lg:w-[50%] flex space-x-1 bg-gray-200 dark:bg-gray-800 rounded-full p-1">
+        <motion.div
+          className="absolute top-1 bottom-1 bg-white dark:bg-gray-700 rounded-full shadow-sm"
+          initial={false}
+          animate={{
+            x: `${tabs.findIndex((tab) => tab.id === activeTab) * 96}%`,
+          }}
+          transition={{
+            type: "spring",
+            stiffness: 300,
+            damping: 30,
+          }}
+          style={{ width: `calc(100% / ${tabs.length})` }}
+        />
+        {tabs.map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setActiveTab(tab.id)}
+            className={`relative z-10 flex-1 px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+              activeTab === tab.id
+                ? "text-gray-900 dark:text-white"
+                : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+            }`}
+          >
+            {tab.label}
+            {tab.id === "requests" && receivedRequestsCount > 0 && (
+              <span className="bg-red-500 text-white text-xs h-5 w-5 flex items-center justify-center rounded-full ml-1">
+                {receivedRequestsCount}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+        
+      {/* Tab Content */}
+      <div>
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeTab}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {activeTab === 'nearby' && (
+              <FindFarmersTab
+                farmers={farmers}
+                isLoading={isLoading}
+                searchType={searchType}
+                setSearchType={setSearchType}
+                searchValue={searchValue}
+                setSearchValue={setSearchValue}
+                handleSearch={searchFarmers}
+                clearSearch={clearSearch}
+                sendRequest={sendConnectionRequest}
+                navigateToProfile={navigateToProfile}
+                currentUser={currentUser}
+              />
+            )}
+            {activeTab === 'requests' && (
+              <RequestsTab
+                requests={connectionRequests}
+                handleResponse={respondToRequest}
+                navigateToProfile={navigateToProfile} isLoading={undefined}              />
+            )}
+            {activeTab === 'connections' && (
+               <ConnectionsTab
+                connections={connections}
+                // @ts-ignore
+                navigateToProfile={navigateToProfile}
+              />
+            )}
+          </motion.div>
+        </AnimatePresence>
+      </div>
     </div>
   );
 }

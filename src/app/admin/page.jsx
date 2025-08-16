@@ -8,6 +8,7 @@ import AdminLoginDialog from "./_components/admin-login-dialog"
 import StatsTab from "./_components/stats-tab"
 import UsersTab from "./_components/users-tab"
 import ReportsTab from "./_components/reports-tab"
+import NotificationsTab from "./_components/notifications-tab"
 
 const Button = ({ children, onClick, variant = "default", size = "default", className = "" }) => {
   const baseClasses = "inline-flex items-center justify-center rounded-md font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2"
@@ -38,6 +39,7 @@ export default function AdminDashboard() {
     totalUsers: 0,
     totalLands: 0,
     totalExpenses: 0,
+    totalMarketplaceListings: 0,
   })
   const [loading, setLoading] = useState(false)
   const { theme, setTheme } = useTheme()
@@ -46,7 +48,8 @@ export default function AdminDashboard() {
   const tabs = [
     { id: "stats", label: "Statistics" },
     { id: "users", label: "Users" },
-    { id: "reports", label: "Reports" }
+    { id: "reports", label: "Reports" },
+    { id: "notifications", label: "Push Notifications" }
   ]
 
   const fetchStats = async () => {
@@ -78,7 +81,7 @@ export default function AdminDashboard() {
       setIsAuthenticated(false)
       setAdmin(null)
       setShowLoginDialog(true)
-      setStats({ totalUsers: 0, totalLands: 0, totalExpenses: 0 })
+      setStats({ totalUsers: 0, totalLands: 0, totalExpenses: 0, totalMarketplaceListings: 0 })
     } catch (error) {
       console.error("Logout error:", error)
     }
@@ -114,6 +117,8 @@ export default function AdminDashboard() {
         return <UsersTab />
       case "reports":
         return <ReportsTab />
+      case "notifications":
+        return <NotificationsTab />
       default:
         return <StatsTab stats={stats} loading={loading} />
     }
@@ -141,20 +146,20 @@ export default function AdminDashboard() {
 
         <div className="space-y-6">
           {/* Tab Navigation */}
-          <div className="relative w-[50%] bg-gray-200 dark:bg-gray-800 rounded-full p-1">
-            <div className="grid w-full grid-cols-3 relative">
+          <div className="relative w-[65%] bg-gray-200  dark:bg-gray-800 rounded-full p-1">
+            <div className="grid w-full grid-cols-4 relative">
               <motion.div
-                className="absolute top-1 bottom-1 bg-blue-400/70 dark:bg-gray-700 rounded-full shadow-sm"
+                className="absolute  top-1 bottom-1 bg-blue-400/70 dark:bg-gray-700 rounded-full shadow-sm"
                 initial={false}
                 animate={{
-                  x: `${tabs.findIndex(tab => tab.id === activeTab) * 99.5}%`,
+                  x: `${tabs.findIndex(tab => tab.id === activeTab) * 99}%`,
                 }}
                 transition={{
                   type: "spring",
                   stiffness: 300,
                   damping: 30,
                 }}
-                style={{ width: "calc(100% / 3)" }}
+                style={{ width: "calc(100% / 4)" }}
               />
               
               {/* Tab Buttons */}
@@ -162,7 +167,7 @@ export default function AdminDashboard() {
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`relative z-10 px-6 py-3 text-sm font-medium rounded-md transition-colors duration-200 ${
+                  className={`relative z-10 px-4 py-3 text-sm font-medium rounded-md transition-colors duration-200 ${
                     activeTab === tab.id
                       ? "text-gray-900 dark:text-gray-100"
                       : "text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"

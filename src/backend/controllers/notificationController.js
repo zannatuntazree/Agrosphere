@@ -111,4 +111,23 @@ export const notificationController = {
       }
     }
   },
+
+  // Send broadcast notification to all users
+  async sendBroadcastNotification(message) {
+    try {
+      const result = await notificationModel.createBroadcastNotification(message)
+      
+      return {
+        success: true,
+        notifiedCount: result.notifiedCount,
+        message: `Broadcast notification sent to ${result.notifiedCount} users`,
+      }
+    } catch (error) {
+      console.error("Broadcast notification error:", error)
+      return {
+        success: false,
+        message: error.message,
+      }
+    }
+  },
 }

@@ -10,12 +10,16 @@ const notificationEmojis = {
   welcome: "🌱",
   forum: "💬",
   comment: "💭",
-  connection_request: "🤝",
+  Connection_request: "🤝",
   rental_reminder: "⏰",
   farm_update: "🚜",
   weather_alert: "🌦️",
   market_update: "📈",
   system: "⚙️",
+  Connection_Accepted: "✅",
+  Connection_Rejected: "❌",
+  report: "🚨",
+  admin: "👨‍💼",
   default: "🔔",
 }
 
