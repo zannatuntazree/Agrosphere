@@ -4,11 +4,14 @@ import { useState, useEffect, useCallback } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import Image from "next/image"
-import { FiArrowLeft, FiMapPin, FiMap, FiInfo, FiTag } from "react-icons/fi"
+import { FiArrowLeft, FiMapPin, FiMap, FiInfo, FiTag, FiPlus } from "react-icons/fi"
 import { FaSeedling, FaChartLine } from "react-icons/fa"
 import { Skeleton } from "@/components/ui/skeleton"
+import { Dialog, DialogTrigger } from "@/components/ui/dialog"
+import { AddCropRecordDialog } from "./_components/AddCropRecordDialog"
+import { CropRecordsSection } from "./_components/CropRecordsSection"
 
-// Skeleton loader for the entire page
+// Skeleton loader 
 const PageSkeleton = () => (
   <div className="max-w-6xl mx-auto px-4 py-6 space-y-6">
     {/* Header Skeleton */}
@@ -172,6 +175,9 @@ export default function LandDetailsPage() {
   const params = useParams()
   const [land, setLand] = useState(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [isDialogOpen, setIsDialogOpen] = useState(false)
+  const [refreshCropRecords, setRefreshCropRecords] = useState(0)
+  const [existingCropRecords, setExistingCropRecords] = useState([])
 
   const fetchLandDetails = useCallback(async () => {
     if (!params.id) return;
@@ -196,6 +202,11 @@ export default function LandDetailsPage() {
   useEffect(() => {
     fetchLandDetails()
   }, [fetchLandDetails])
+
+  const handleCropRecordAdded = () => {
+    setIsDialogOpen(false)
+    setRefreshCropRecords(prev => prev + 1)
+  }
 
   const getSuggestedCrops = () => {
     if (!land?.land_type) return []
@@ -334,10 +345,30 @@ export default function LandDetailsPage() {
       )}
 
       <div className="bg-white dark:bg-gray-800 rounded-lg p-6 border border-gray-200 dark:border-gray-700">
-         <div className="flex items-center gap-3">
-            <FaChartLine className="h-6 w-6 text-gray-400" />
-            <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Land statistics: <span className="text-base font-normal text-gray-500 dark:text-gray-400">will be added later</span></h2>
+         <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <FaChartLine className="h-6 w-6 text-green-600" />
+              <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Crop Management</h2>
+            </div>
+            <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+              <DialogTrigger asChild>
+                <button className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:scale-105 text-white rounded-full transition-all duration-200 shadow-lg hover:shadow-xl font-medium">
+                  <FiPlus className="h-4 w-4" />
+                  Add Crop Record
+                </button>
+              </DialogTrigger>
+              <AddCropRecordDialog 
+                landId={land.id} 
+                onSuccess={handleCropRecordAdded} 
+                existingRecords={existingCropRecords}
+              />
+            </Dialog>
          </div>
+         <CropRecordsSection 
+           landId={land.id} 
+           key={refreshCropRecords} 
+           onRecordsChange={setExistingCropRecords}
+         />
       </div>
     </div>
   )
