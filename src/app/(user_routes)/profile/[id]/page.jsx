@@ -2,10 +2,9 @@
 "use client"
 import { useState, useEffect } from "react"
 import { useRouter, useParams } from "next/navigation"
-import { FiEdit, FiMail, FiPhone, FiMapPin, FiCalendar, FiUser, FiMap, FiLayers, FiMessageSquare,  FiTrendingUp } from "react-icons/fi"
+import { FiEdit, FiMail, FiPhone, FiMapPin, FiCalendar, FiUser, FiMap, FiLayers, FiMessageSquare, FiTrendingUp, FiSend } from "react-icons/fi"
 import { FaSeedling } from "react-icons/fa";
 import { FaUserPlus } from "react-icons/fa6"
-import { BiSolidMessageRoundedDots } from "react-icons/bi"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
 import EditProfileDialog from "./_components/editprofile"
@@ -50,25 +49,33 @@ export default function ProfilePage() {
   }, [connections, connectionRequests, params.id])
 
   const checkConnectionStatus = () => {
-    if (!params.id) return
+    if (!params.id || !currentUser) return
+
+    // Don't check connection status for own profile
+    if (isOwnProfile) return
 
     // Check if already connected
     const isConnected = connections.some(conn => 
       conn.friend_info?.id?.toString() === params.id.toString()
     )
+    
     if (isConnected) {
       setConnectionStatus('connected')
       return
     }
 
     // Check if request already sent or received
-    const existingRequest = connectionRequests.find(req => 
-      (req.requester_id?.toString() === params.id.toString() || 
-       req.receiver_id?.toString() === params.id.toString()) &&
-      req.status === 'pending'
-    )
+    const existingRequest = connectionRequests.find(req => {
+      const isRelatedToThisUser = (
+        req.other_user_id?.toString() === params.id.toString() ||
+        req.requester_id?.toString() === params.id.toString() ||
+        req.receiver_id?.toString() === params.id.toString()
+      )
+      return isRelatedToThisUser && req.status === 'pending'
+    })
 
     if (existingRequest) {
+      // Determine if current user sent the request or received it
       if (existingRequest.requester_id?.toString() === currentUser?.id?.toString()) {
         setConnectionStatus('sent')
         setRequestSent(true)
@@ -77,6 +84,7 @@ export default function ProfilePage() {
       }
     } else {
       setConnectionStatus(null)
+      setRequestSent(false)
     }
   }
 
@@ -126,12 +134,8 @@ export default function ProfilePage() {
 
   const fetchConnections = async () => {
     try {
-      // If viewing another user's profile, add userId parameter
-      const url = isOwnProfile 
-        ? "/api/user-connections/friends" 
-        : `/api/user-connections/friends?userId=${params.id}`;
-      
-      const response = await fetch(url, {
+      // Always fetch current user's connections to check connection status
+      const response = await fetch("/api/user-connections/friends", {
         credentials: "include"
       })
       const result = await response.json()
@@ -178,7 +182,17 @@ export default function ProfilePage() {
   }
 
   const handleMessage = () => {
-    router.push("/message")
+    if (connectionStatus !== 'connected') {
+      toast({
+        title: "Not Connected",
+        description: "You can only message users you are connected with.",
+        variant: "destructive"
+      })
+      return
+    }
+
+    // Simply redirect to messages tab
+    router.push('/messages')
   }
 
   const handleProfileUpdate = (updatedUser) => {
@@ -308,8 +322,7 @@ export default function ProfilePage() {
                 <div className="flex items-start flex-col md:flex-row gap-4 mt-4 sm:mt-0">
                   {/* Connection count - enhanced styling */}
                   <div 
-                    className="text-center mx-auto flex-shrink-0 mt-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-green-200/50 dark:border-slate-700/50 cursor-pointer hover:bg-white/70 dark:hover:bg-slate-800/70 transition-all duration-300"
-                    onClick={() => router.push('/nearby')}
+                    className="text-center mx-auto flex-shrink-0 mt-2 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm rounded-xl p-3 border border-green-200/50 dark:border-slate-700/50"
                   >
                     <div className="text-2xl font-bold text-gray-900 dark:text-white">
                       {connections.length}
@@ -362,14 +375,21 @@ export default function ProfilePage() {
                       )}
                     </button>
 
-                    {/* Message button */}
-                    <button 
-                      onClick={handleMessage}
-                      className="inline-flex items-center justify-center rounded-full text-sm font-semibold h-11 w-full px-4 py-2 bg-gradient-to-r from-blue-500 to-teal-400 text-white hover:from-emerald-600 hover:to-teal-700 cursor-pointer transition-all duration-300 shadow-lg hover:shadow-xl transform hover:scale-[1.02] active:scale-[0.98]"
-                    >
-                      <BiSolidMessageRoundedDots className="w-4 h-4 mr-2 flex-shrink-0" />
-                      <span className="whitespace-nowrap">Message</span>
-                    </button>
+                    {/* Message Button - Only show for connected users */}
+                    {connectionStatus === 'connected' && (
+                      <button
+                        onClick={handleMessage}
+                        className="
+                          inline-flex items-center justify-center rounded-full text-sm font-semibold
+                          h-11 w-full px-4 py-2 transition-all duration-300 shadow-lg hover:shadow-xl
+                          transform hover:scale-[1.02] active:scale-[0.98]
+                          bg-gradient-to-r from-emerald-500 to-teal-600 text-white hover:from-emerald-600 hover:to-teal-700 cursor-pointer
+                        "
+                      >
+                        <FiSend className="w-4 h-4 mr-2 flex-shrink-0" />
+                        <span className="whitespace-nowrap">Message</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

@@ -171,4 +171,22 @@ export const userConnectionController = {
     }
   },
 
+  // Remove connection
+  async removeConnection(userId, connectionId) {
+    try {
+      const result = await userConnectionModel.removeConnection(userId, connectionId)
+
+      return {
+        success: true,
+        message: "Connection removed successfully"
+      }
+    } catch (error) {
+      console.error("Remove connection error:", error)
+      return {
+        success: false,
+        message: error.message
+      }
+    }
+  },
+
 }

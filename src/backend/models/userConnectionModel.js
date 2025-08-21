@@ -181,11 +181,11 @@ export const userConnectionModel = {
     let whereClause = sql``
     
     if (type === 'sent') {
-      whereClause = sql`WHERE uc.requester_id = ${userId}`
+      whereClause = sql`WHERE uc.requester_id = ${userId} AND uc.status = 'pending'`
     } else if (type === 'received') {
-      whereClause = sql`WHERE uc.receiver_id = ${userId}`
+      whereClause = sql`WHERE uc.receiver_id = ${userId} AND uc.status = 'pending'`
     } else {
-      whereClause = sql`WHERE uc.requester_id = ${userId} OR uc.receiver_id = ${userId}`
+      whereClause = sql`WHERE (uc.requester_id = ${userId} OR uc.receiver_id = ${userId}) AND uc.status = 'pending'`
     }
 
     const result = await sql`
@@ -301,6 +301,23 @@ export const userConnectionModel = {
       WHERE (requester_id = ${userId1} AND receiver_id = ${userId2})
          OR (requester_id = ${userId2} AND receiver_id = ${userId1})
     `
+    return result[0]
+  },
+
+  // Remove connection
+  async removeConnection(userId, connectionId) {
+    const result = await sql`
+      DELETE FROM user_connections 
+      WHERE id = ${connectionId} 
+        AND (requester_id = ${userId} OR receiver_id = ${userId})
+        AND (status = 'accepted' OR (status = 'pending' AND requester_id = ${userId}))
+      RETURNING id
+    `
+
+    if (result.length === 0) {
+      throw new Error("Connection not found or unauthorized")
+    }
+
     return result[0]
   }
 }
