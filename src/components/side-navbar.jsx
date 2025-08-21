@@ -10,7 +10,8 @@ import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { FaSeedling } from "react-icons/fa"
-import { FiBell, FiCloud, FiDollarSign, FiHome, FiLogOut, FiMap, FiMapPin, FiMessageSquare, FiMoon, FiShoppingCart, FiSun, FiUser, FiUsers, FiX } from "react-icons/fi"
+import { FiBell,  FiDollarSign, FiHome, FiLogOut, FiMap, FiMapPin, FiMessageSquare, FiMoon, FiShoppingCart, FiSun, FiUser, FiUsers, FiX } from "react-icons/fi"
+import { TbMessageChatbot } from "react-icons/tb";
 
 const navigationItems = [
   {
@@ -63,6 +64,11 @@ const navigationItems = [
   //   href: "/weather",
   //   icon: FiCloud,
   // },
+    {
+    title: "Chatbot",
+    href: "/chatbot",
+    icon: TbMessageChatbot,
+  },
   {
     title: "Notifications",
     href: "/notifications",

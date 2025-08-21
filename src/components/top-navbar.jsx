@@ -49,7 +49,7 @@ export default function TopNavbar({ onMenuClick }) {
 
           {/* Logo */}
           <div className="flex items-center gap-2">
-            <GiHolosphere className="h-8 w-8 text-green-600" />
+            <GiHolosphere className="h-8 w-8 text-green-400 drop-shadow-[0_5px_15px_rgba(34,197,94,0.5)]" />
             <span className={cn("text-3xl font-bold", inter.className)}>
               Agro
               {/* <GiHolosphere className="inline -ml-[1px] -mr-[1px] h-6 w-6 text-green-600 mx-0.5" /> */}

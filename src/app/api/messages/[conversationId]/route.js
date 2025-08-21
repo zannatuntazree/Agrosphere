@@ -11,7 +11,7 @@ export async function GET(request, { params }) {
     }
 
     const userId = authToken // Auth token is just the user ID
-    const { conversationId } = params
+    const { conversationId } = await params
 
     // Verify user is part of the conversation
     const conversationCheck = await sql`
