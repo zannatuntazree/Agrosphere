@@ -140,7 +140,7 @@ CREATE INDEX idx_seasonal_crop_plans_land_id ON seasonal_crop_plans(land_id);
 CREATE INDEX idx_seasonal_crop_plans_season ON seasonal_crop_plans(season);
 CREATE INDEX idx_seasonal_crop_plans_status ON seasonal_crop_plans(status);
 
---- Not used yet ------------------------------------------------------------
+---crop records table
 CREATE TABLE crop_records (
   id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
   land_id TEXT NOT NULL REFERENCES lands(id) ON DELETE CASCADE,
@@ -150,10 +150,77 @@ CREATE TABLE crop_records (
   planting_date DATE NOT NULL,
   harvest_date DATE,
   total_yield NUMERIC(10,2),
+  yield_unit TEXT,
   total_expenses NUMERIC(10,2), 
   total_revenue NUMERIC(10,2),
   notes TEXT,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-------------------------------------------------------------------------------
+
+
+-- Add user connections table for friend requests
+CREATE TABLE user_connections (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  requester_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT CHECK (status IN ('pending', 'accepted', 'rejected')) DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(requester_id, receiver_id)
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_user_connections_requester ON user_connections(requester_id);
+CREATE INDEX idx_user_connections_receiver ON user_connections(receiver_id);
+CREATE INDEX idx_user_connections_status ON user_connections(status);
+
+-- Add latitude and longitude to users table for location-based queries
+ALTER TABLE users ADD COLUMN latitude NUMERIC(10, 7);
+ALTER TABLE users ADD COLUMN longitude NUMERIC(10, 7);
+
+-- Create spatial index for location queries
+CREATE INDEX idx_users_location ON users(latitude, longitude);
+
+-- Create AIchats table
+CREATE TABLE AIchats (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create AImessages table
+CREATE TABLE AImessages (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  chat_id TEXT NOT NULL REFERENCES AIchats(id) ON DELETE CASCADE,
+  role TEXT CHECK (role IN ('user', 'assistant')) NOT NULL,
+  content TEXT NOT NULL,
+  image_url TEXT, -- Cloudinary URL for uploaded images
+  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_AIchats_user_id ON AIchats(user_id);
+CREATE INDEX idx_AIchats_created_at ON AIchats(created_at);
+CREATE INDEX idx_AImessages_chat_id ON AImessages(chat_id);
+CREATE INDEX idx_AImessages_timestamp ON AImessages(timestamp);
+
+
+
+-- First, drop the existing indexes
+DROP INDEX IF EXISTS idx_chats_user_id;
+DROP INDEX IF EXISTS idx_chats_created_at;
+DROP INDEX IF EXISTS idx_messages_chat_id;
+DROP INDEX IF EXISTS idx_messages_timestamp;
+
+-- Rename the tables
+ALTER TABLE chats RENAME TO AIchats;
+ALTER TABLE messages RENAME TO AImessages;
+
+
+-- Recreate indexes with new table names
+CREATE INDEX idx_AIchats_user_id ON AIchats(user_id);
+CREATE INDEX idx_AIchats_created_at ON AIchats(created_at);
+CREATE INDEX idx_AImessages_chat_id ON AImessages(chat_id);
+CREATE INDEX idx_AImessages_timestamp ON AImessages(timestamp);
