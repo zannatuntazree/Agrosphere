@@ -1,7 +1,19 @@
 import React from 'react';
 
-const EquipmentCard = ({ equipment, user, onRequestRent }) => {
+const EquipmentCard = ({ equipment, user, onRequestRent, userRequests = [] }) => {
   const isOwner = equipment.owner_id === user?.id;
+  const hasExistingRequest = userRequests.some(
+    request => request.equipment_id === equipment.id && 
+    (request.status === 'pending' || request.status === 'accepted')
+  );
+  
+  const getButtonText = () => {
+    if (isOwner) return 'Your Equipment';
+    if (hasExistingRequest) return 'Request Already Sent';
+    return 'Request to Rent';
+  };
+  
+  const isButtonDisabled = isOwner || equipment.status !== 'available' || hasExistingRequest;
   
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden border border-gray-200 dark:border-gray-700">
@@ -43,14 +55,14 @@ const EquipmentCard = ({ equipment, user, onRequestRent }) => {
         
         <button 
           className={`w-full py-2 px-4 rounded-full font-medium transition-colors ${
-            isOwner || equipment.status !== 'available'
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+            isButtonDisabled
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed dark:bg-gray-600 dark:text-gray-400'
               : 'bg-blue-600 text-white hover:bg-blue-700'
           }`}
           onClick={() => onRequestRent(equipment)}
-          disabled={isOwner || equipment.status !== 'available'}
+          disabled={isButtonDisabled}
         >
-          {isOwner ? 'Your Equipment' : 'Request to Rent'}
+          {getButtonText()}
         </button>
       </div>
     </div>

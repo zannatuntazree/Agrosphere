@@ -1,7 +1,7 @@
 "use client"
 
 import { Skeleton } from "@/components/ui/skeleton"
-import { AnimatePresence, motion } from "framer-motion"
+import { AnimatePresence, motion } from "motion/react"
 import { useEffect, useState } from "react"
 import {
   FiAlertTriangle, FiChevronDown, FiClock, FiFlag, FiMail, FiMapPin,

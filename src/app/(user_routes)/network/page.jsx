@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { motion } from "framer-motion"
+import { motion } from "motion/react"
 import { useToast } from "@/components/ui/use-toast"
 import { FiUsers, FiUserCheck, FiUserPlus, FiSearch } from "react-icons/fi"
 

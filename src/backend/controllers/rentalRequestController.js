@@ -1,4 +1,5 @@
 import sql from '../config/database.js';
+import { notificationController } from './notificationController.js';
 
 const createRentalRequest = async (requestData) => {
   const {
@@ -11,6 +12,21 @@ const createRentalRequest = async (requestData) => {
   } = requestData;
 
   try {
+    // Check if user already has a pending or accepted request for this equipment
+    const existingRequest = await sql`
+      SELECT id FROM rental_requests 
+      WHERE equipment_id = ${equipment_id} 
+      AND requester_id = ${requester_id} 
+      AND status IN ('pending', 'accepted')
+    `;
+
+    if (existingRequest.length > 0) {
+      return {
+        success: false,
+        message: 'You already have a pending or accepted request for this equipment'
+      };
+    }
+
     const result = await sql`
       INSERT INTO rental_requests (
         equipment_id, requester_id, requester_phone, requester_email,
@@ -92,13 +108,15 @@ const acceptRentalRequest = async (requestId, equipmentId) => {
     // Get requester details for notification
     const requesterDetails = requestResult[0];
 
-    // Create notification for the accepted requester
-    await sql`
-      INSERT INTO notifications (user_id, message, type, is_read)
-      VALUES (${requesterDetails.requester_id}, 
-              'Rental Request Accepted! Your rental request has been accepted. Please contact the owner via phone: ${requesterDetails.requester_phone} or email: ${requesterDetails.requester_email}', 
-              'rental', false)
-    `;
+    // Create notification message
+    const notificationMessage = `Rental Request Accepted! Your rental request has been accepted. Please contact the owner via phone: ${requesterDetails.requester_phone} or email: ${requesterDetails.requester_email}`;
+
+    // Create notification for the accepted requester using the notification controller
+    await notificationController.createNotificationForUser(
+      requesterDetails.requester_id,
+      'rental',
+      notificationMessage
+    );
     
     return {
       success: true,

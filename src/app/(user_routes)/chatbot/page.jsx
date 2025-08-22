@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { FiPlus, FiMessageSquare, FiTrash2 } from "react-icons/fi"
-import { motion, AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence } from "motion/react"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
   AlertDialog,

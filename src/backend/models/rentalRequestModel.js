@@ -37,6 +37,18 @@ const rentalRequestModel = {
         requested_duration_days
       } = requestData;
 
+      // Check if user already has a pending or accepted request for this equipment
+      const existingRequest = await sql`
+        SELECT id FROM rental_requests 
+        WHERE equipment_id = ${equipment_id} 
+        AND requester_id = ${requester_id} 
+        AND status IN ('pending', 'accepted')
+      `;
+
+      if (existingRequest.length > 0) {
+        throw new Error('You already have a pending or accepted request for this equipment');
+      }
+
       const result = await sql`
         INSERT INTO rental_requests (
           equipment_id, requester_id, requester_phone, requester_email,
