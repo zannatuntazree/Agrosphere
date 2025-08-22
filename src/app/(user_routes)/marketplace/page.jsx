@@ -340,9 +340,6 @@ export default function MarketplacePage() {
                       <div className="flex items-center gap-1.5 flex-shrink-0"><FiClock /><span>{formatTimeAgo(listing.created_at)}</span></div>
                     </div>
                     <div className="flex justify-end gap-2 mt-4 ">
-                      <button className=" cursor-pointer flex items-center justify-center gap-2 px-5 py-2 text-sm font-medium text-white bg-green-600 rounded-full hover:bg-green-700 transition-colors shadow-sm">
-                        <FiMessageSquare className="h-4 w-4" /> Message
-                      </button>
                       <button 
                         onClick={() => handleOpenReportDialog(listing)}
                         className="cursor-pointer flex-shrink-0 flex items-center justify-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
