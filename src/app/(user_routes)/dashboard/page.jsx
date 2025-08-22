@@ -1,11 +1,27 @@
-"use client"
+"use client";
 
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useRouter } from "next/navigation"
-import { useEffect, useState } from "react"
-import { FaSeedling } from "react-icons/fa"
-import { FiArrowRight, FiCloud, FiDollarSign, FiShoppingCart, FiTrendingDown, FiTrendingUp } from "react-icons/fi"
-
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { FaSeedling } from "react-icons/fa";
+import {
+  FiArrowRight,
+  FiCloud,
+  FiDollarSign,
+  FiShoppingCart,
+  FiTrendingDown,
+  FiTrendingUp,
+  FiThermometer,
+  FiMapPin,
+  FiCalendar,
+  FiPackage,
+} from "react-icons/fi";
 
 const bentoBoxes = [
   {
@@ -40,41 +56,111 @@ const bentoBoxes = [
     gradient: "from-emerald-400 via-emerald-500 to-emerald-600",
     route: "/crop-planning",
   },
-]
+];
 
 export default function DashboardPage() {
-  const [expenseData, setExpenseData] = useState(null)
-  const [isLoadingExpenses, setIsLoadingExpenses] = useState(true)
-  const router = useRouter()
+  const [expenseData, setExpenseData] = useState(null);
+  const [weatherData, setWeatherData] = useState(null);
+  const [marketplaceData, setMarketplaceData] = useState(null);
+  const [cropPlanData, setCropPlanData] = useState(null);
+  const [isLoadingExpenses, setIsLoadingExpenses] = useState(true);
+  const [isLoadingWeather, setIsLoadingWeather] = useState(true);
+  const [isLoadingMarketplace, setIsLoadingMarketplace] = useState(true);
+  const [isLoadingCropPlan, setIsLoadingCropPlan] = useState(true);
+  const router = useRouter();
 
   useEffect(() => {
-    fetchExpenseData()
-  }, [])
+    fetchExpenseData();
+    fetchWeatherData();
+    fetchMarketplaceData();
+    fetchCropPlanData();
+  }, []);
 
   const fetchExpenseData = async () => {
     try {
       const response = await fetch("/api/expenses", {
         credentials: "include",
-      })
+      });
 
       if (response.ok) {
-        const result = await response.json()
+        const result = await response.json();
         if (result.success) {
-          setExpenseData(result.data)
+          setExpenseData(result.data);
         }
       }
     } catch (error) {
-      console.error("Error fetching expense data:", error)
+      console.error("Error fetching expense data:", error);
     } finally {
-      setIsLoadingExpenses(false)
+      setIsLoadingExpenses(false);
     }
-  }
+  };
+
+  const fetchWeatherData = async () => {
+    try {
+      // Default to Dhaka, Bangladesh for demo
+      const response = await fetch(
+        "/api/weather?city=Dhaka&country=Bangladesh",
+        {
+          credentials: "include",
+        }
+      );
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setWeatherData(result.data);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching weather data:", error);
+    } finally {
+      setIsLoadingWeather(false);
+    }
+  };
+
+  const fetchMarketplaceData = async () => {
+    try {
+      const response = await fetch("/api/marketplace/my-listings", {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setMarketplaceData(result);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching marketplace data:", error);
+    } finally {
+      setIsLoadingMarketplace(false);
+    }
+  };
+
+  const fetchCropPlanData = async () => {
+    try {
+      const response = await fetch("/api/crop-plans", {
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setCropPlanData(result);
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching crop plan data:", error);
+    } finally {
+      setIsLoadingCropPlan(false);
+    }
+  };
 
   const handleBoxClick = (box) => {
     if (box.route) {
-      router.push(box.route)
+      router.push(box.route);
     }
-  }
+  };
 
   const renderExpenseContent = () => {
     if (isLoadingExpenses) {
@@ -85,13 +171,13 @@ export default function DashboardPage() {
             <div className="absolute inset-0 animate-pulse rounded-full h-10 w-10 border-3 border-white/10"></div>
           </div>
         </div>
-      )
+      );
     }
 
-    const earnings = expenseData?.currentMonth?.earning || 0
-    const expenses = expenseData?.currentMonth?.expense || 0
-    const net = earnings - expenses
-    const isPositiveNet = net >= 0
+    const earnings = expenseData?.currentMonth?.earning || 0;
+    const expenses = expenseData?.currentMonth?.expense || 0;
+    const net = earnings - expenses;
+    const isPositiveNet = net >= 0;
 
     return (
       <div className="space-y-4">
@@ -101,7 +187,9 @@ export default function DashboardPage() {
           <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/15 dark:border-white/8">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 bg-green-400 dark:bg-green-300 rounded-full"></div>
-              <p className="text-xs text-black dark:text-white/70 uppercase tracking-wide font-medium">Earnings</p>
+              <p className="text-xs text-black dark:text-white/70 uppercase tracking-wide font-medium">
+                Earnings
+              </p>
             </div>
             <p className="text-xl font-bold text-black dark:text-green-200">
               ৳ {earnings.toLocaleString()}
@@ -112,7 +200,9 @@ export default function DashboardPage() {
           <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/15 dark:border-white/8">
             <div className="flex items-center gap-2 mb-2">
               <div className="w-2 h-2 bg-red-400 dark:bg-red-300 rounded-full"></div>
-              <p className="text-xs text-black dark:text-white/70 uppercase tracking-wide font-medium">Expenses</p>
+              <p className="text-xs text-black dark:text-white/70 uppercase tracking-wide font-medium">
+                Expenses
+              </p>
             </div>
             <p className="text-xl font-bold text-black dark:text-red-200">
               ৳ {expenses.toLocaleString()}
@@ -122,11 +212,25 @@ export default function DashboardPage() {
           {/* Net Profit/Loss */}
           <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/15 dark:border-white/8">
             <div className="flex items-center gap-2 mb-2">
-              <div className={`w-2 h-2 rounded-full ${isPositiveNet ? 'bg-emerald-400 dark:bg-emerald-300' : 'bg-orange-400 dark:bg-orange-300'}`}></div>
-              <p className="text-xs text-black dark:text-white/70 uppercase tracking-wide font-medium">Net</p>
+              <div
+                className={`w-2 h-2 rounded-full ${
+                  isPositiveNet
+                    ? "bg-emerald-400 dark:bg-emerald-300"
+                    : "bg-orange-400 dark:bg-orange-300"
+                }`}
+              ></div>
+              <p className="text-xs text-black dark:text-white/70 uppercase tracking-wide font-medium">
+                Net
+              </p>
             </div>
-            <p className={`text-xl font-bold ${isPositiveNet ? 'text-black dark:text-emerald-200' : 'text-orange-300 dark:text-orange-200'}`}>
-              {isPositiveNet ? '+' : ''}৳ {net.toLocaleString()}
+            <p
+              className={`text-xl font-bold ${
+                isPositiveNet
+                  ? "text-black dark:text-emerald-200"
+                  : "text-orange-300 dark:text-orange-200"
+              }`}
+            >
+              {isPositiveNet ? "+" : ""}৳ {net.toLocaleString()}
             </p>
           </div>
         </div>
@@ -136,7 +240,13 @@ export default function DashboardPage() {
           <div className="bg-white/5 dark:bg-white/3 backdrop-blur-sm rounded-xl p-3 border border-white/8 dark:border-white/5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className={`p-2 rounded-lg ${expenseData.monthlyComparison.isPositive ? 'bg-green-500/15 dark:bg-green-500/10' : 'bg-red-500/15 dark:bg-red-500/10'}`}>
+                <div
+                  className={`p-2 rounded-lg ${
+                    expenseData.monthlyComparison.isPositive
+                      ? "bg-green-500/15 dark:bg-green-500/10"
+                      : "bg-red-500/15 dark:bg-red-500/10"
+                  }`}
+                >
                   {expenseData.monthlyComparison.isPositive ? (
                     <FiTrendingUp className="h-4 w-4 text-green-400 dark:text-green-300" />
                   ) : (
@@ -144,31 +254,266 @@ export default function DashboardPage() {
                   )}
                 </div>
                 <div>
-                  <p className={`text-sm font-semibold ${expenseData.monthlyComparison.isPositive ? 'text-black dark:text-green-200' : 'text-black dark:text-red-200'}`}>
-                    {expenseData.monthlyComparison.percentageChange > 0 ? "+" : ""}
+                  <p
+                    className={`text-sm font-semibold ${
+                      expenseData.monthlyComparison.isPositive
+                        ? "text-black dark:text-green-200"
+                        : "text-black dark:text-red-200"
+                    }`}
+                  >
+                    {expenseData.monthlyComparison.percentageChange > 0
+                      ? "+"
+                      : ""}
                     {Math.abs(expenseData.monthlyComparison.percentageChange)}%
                   </p>
-                  <p className="text-xs text-gray-800 dark:text-white/60">vs last month</p>
+                  <p className="text-xs text-gray-800 dark:text-white/60">
+                    vs last month
+                  </p>
                 </div>
               </div>
             </div>
           </div>
         )}
       </div>
-    )
-  }
+    );
+  };
 
-  const renderComingSoon = (title) => (
-    <div className="flex flex-col items-center justify-center h-40">
-      <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-full p-4 mb-3 border border-white/15 dark:border-white/8">
-        <div className="w-6 h-6 bg-white/15 dark:bg-white/10 rounded animate-pulse"></div>
+  const renderWeatherContent = () => {
+    if (isLoadingWeather) {
+      return (
+        <div className="flex items-center justify-center h-40">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-10 w-10 border-3 border-white/30 border-t-white"></div>
+            <div className="absolute inset-0 animate-pulse rounded-full h-10 w-10 border-3 border-white/10"></div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!weatherData?.current) {
+      return (
+        <div className="flex flex-col items-center justify-center h-40">
+          <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-full p-4 mb-3 border border-white/15 dark:border-white/8">
+            <FiCloud className="w-6 h-6 text-white/60 dark:text-white/50" />
+          </div>
+          <p className="text-white/95 dark:text-white/90 font-medium mb-1">
+            Weather Unavailable
+          </p>
+          <p className="text-xs text-white/70 dark:text-white/60 text-center max-w-32">
+            Unable to load weather data
+          </p>
+        </div>
+      );
+    }
+
+    const { temperature, condition, location } = weatherData.current;
+
+    return (
+      <div className="space-y-4">
+        {/* Temperature Display */}
+        <div className="flex items-center justify-center">
+          <div className="text-center">
+            <div className="flex items-center justify-center gap-3 mb-2">
+              <FiThermometer className="h-8 w-8 text-white/80 dark:text-white/70" />
+              <span className="text-4xl font-bold text-black dark:text-white">
+                {temperature}°C
+              </span>
+            </div>
+            <p className="text-sm text-black dark:text-white/80 font-medium capitalize">
+              {condition}
+            </p>
+          </div>
+        </div>
+
+        {/* Location */}
+        <div className="bg-white/5 dark:bg-white/3 backdrop-blur-sm rounded-xl p-3 border border-white/8 dark:border-white/5">
+          <div className="flex items-center gap-2">
+            <FiMapPin className="h-4 w-4 text-white/70 dark:text-white/60" />
+            <p className="text-sm text-black dark:text-white/80">{location}</p>
+          </div>
+        </div>
       </div>
-      <p className="text-white/95 dark:text-white/90 font-medium mb-1">Coming Soon</p>
-      <p className="text-xs text-white/70 dark:text-white/60 text-center max-w-32">
-        Feature in development
-      </p>
-    </div>
-  )
+    );
+  };
+
+  const renderMarketplaceContent = () => {
+    if (isLoadingMarketplace) {
+      return (
+        <div className="flex items-center justify-center h-40">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-10 w-10 border-3 border-white/30 border-t-white"></div>
+            <div className="absolute inset-0 animate-pulse rounded-full h-10 w-10 border-3 border-white/10"></div>
+          </div>
+        </div>
+      );
+    }
+
+    const latestListing = marketplaceData?.listings?.[0];
+
+    if (!latestListing) {
+      return (
+        <div className="flex flex-col items-center justify-center h-40">
+          <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-full p-4 mb-3 border border-white/15 dark:border-white/8">
+            <FiPackage className="w-6 h-6 text-white/60 dark:text-white/50" />
+          </div>
+          <p className="text-white/95 dark:text-white/90 font-medium mb-1">
+            No Posts Yet
+          </p>
+          <p className="text-xs text-white/70 dark:text-white/60 text-center max-w-32">
+            Create your first listing
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Latest Post Card */}
+        <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/15 dark:border-white/8">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-black dark:text-white mb-1 line-clamp-1">
+                {latestListing.crop_name}
+              </h3>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div>
+                <p className="text-xs text-black dark:text-white/60 uppercase tracking-wide font-medium">
+                  Price
+                </p>
+                <p className="text-lg font-bold text-black dark:text-green-200">
+                  ৳ {latestListing.price_per_unit?.toLocaleString() || "N/A"}/
+                  {latestListing.unit || "unit"}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-black dark:text-white/60 uppercase tracking-wide font-medium">
+                  Available
+                </p>
+                <p className="text-sm font-medium text-black dark:text-white/80">
+                  {latestListing.quantity_available || 0}{" "}
+                  {latestListing.unit || "units"}
+                </p>
+              </div>
+            </div>
+
+            <div className="text-right">
+              <p className="text-xs text-black dark:text-white/60">
+                Latest Post
+              </p>
+              <p className="text-sm font-medium text-black dark:text-white/80">
+                {new Date(latestListing.created_at).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Stats */}
+        <div className="bg-white/5 dark:bg-white/3 backdrop-blur-sm rounded-xl p-3 border border-white/8 dark:border-white/5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-black dark:text-white/70">
+              Total Listings
+            </p>
+            <p className="text-sm font-semibold text-black dark:text-white">
+              {marketplaceData?.listings?.length || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderCropPlanContent = () => {
+    if (isLoadingCropPlan) {
+      return (
+        <div className="flex items-center justify-center h-40">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-10 w-10 border-3 border-white/30 border-t-white"></div>
+            <div className="absolute inset-0 animate-pulse rounded-full h-10 w-10 border-3 border-white/10"></div>
+          </div>
+        </div>
+      );
+    }
+
+    const latestCropPlan = cropPlanData?.cropPlans?.[0];
+
+    if (!latestCropPlan) {
+      return (
+        <div className="flex flex-col items-center justify-center h-40">
+          <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-full p-4 mb-3 border border-white/15 dark:border-white/8">
+            <FaSeedling className="w-6 h-6 text-white/60 dark:text-white/50" />
+          </div>
+          <p className="text-white/95 dark:text-white/90 font-medium mb-1">
+            No Plans Yet
+          </p>
+          <p className="text-xs text-white/70 dark:text-white/60 text-center max-w-32">
+            Create your first crop plan
+          </p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="space-y-4">
+        {/* Latest Crop Plan Card */}
+        <div className="bg-white/8 dark:bg-white/5 backdrop-blur-sm rounded-xl p-4 border border-white/15 dark:border-white/8">
+          <div className="flex items-start justify-between mb-3">
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-black dark:text-white mb-1">
+                {latestCropPlan.crop_name}
+              </h3>
+              <p className="text-sm text-black dark:text-white/70 capitalize">
+                {latestCropPlan.season} Season
+              </p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4 mb-3">
+            <div>
+              <p className="text-xs text-black dark:text-white/60 uppercase tracking-wide font-medium">
+                Area
+              </p>
+              <p className="text-sm font-semibold text-black dark:text-white">
+                {latestCropPlan.land_area || "N/A"} acres
+              </p>
+            </div>
+            <div>
+              <p className="text-xs text-black dark:text-white/60 uppercase tracking-wide font-medium">
+                Expected Yield
+              </p>
+              <p className="text-sm font-semibold text-black dark:text-white">
+                {latestCropPlan.estimated_yield || "N/A"}{" "}
+                {latestCropPlan.yield_unit || "kg"}
+              </p>
+            </div>
+          </div>
+
+          {latestCropPlan.planting_date && (
+            <div className="flex items-center gap-2 text-sm text-black dark:text-white/80">
+              <FiCalendar className="h-4 w-4" />
+              <span>
+                Planted:{" "}
+                {new Date(latestCropPlan.planting_date).toLocaleDateString()}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Stats */}
+        <div className="bg-white/5 dark:bg-white/3 backdrop-blur-sm rounded-xl p-3 border border-white/8 dark:border-white/5">
+          <div className="flex items-center justify-between">
+            <p className="text-xs text-black dark:text-white/70">Total Plans</p>
+            <p className="text-sm font-semibold text-black dark:text-white">
+              {cropPlanData?.cropPlans?.length || 0}
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-br ">
@@ -186,13 +531,17 @@ export default function DashboardPage() {
             <Card
               key={index}
               className={`relative overflow-hidden border-0 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer group ${
-                box.route ? "hover:scale-[1.02] hover:-translate-y-1" : "hover:scale-[1.01]"
+                box.route
+                  ? "hover:scale-[1.02] hover:-translate-y-1"
+                  : "hover:scale-[1.01]"
               }`}
               onClick={() => handleBoxClick(box)}
             >
               {/* Gradient Background */}
-              <div className={`absolute inset-0 bg-gradient-to-br ${box.gradient} opacity-60 dark:opacity-40`} />
-              
+              <div
+                className={`absolute inset-0 bg-gradient-to-br ${box.gradient} opacity-60 dark:opacity-40`}
+              />
+
               {/* Decorative Elements */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 dark:bg-white/3 rounded-full -translate-y-16 translate-x-16 blur-xl"></div>
               <div className="absolute bottom-0 left-0 w-24 h-24 bg-white/3 dark:bg-white/2 rounded-full translate-y-12 -translate-x-12 blur-xl"></div>
@@ -221,7 +570,10 @@ export default function DashboardPage() {
               </CardHeader>
 
               <CardContent className="relative z-10 pt-0">
-                {box.id === "expenses" ? renderExpenseContent() : renderComingSoon(box.title)}
+                {box.id === "expenses" && renderExpenseContent()}
+                {box.id === "weather" && renderWeatherContent()}
+                {box.id === "marketplace" && renderMarketplaceContent()}
+                {box.id === "current-season" && renderCropPlanContent()}
               </CardContent>
             </Card>
           ))}

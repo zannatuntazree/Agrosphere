@@ -7,9 +7,13 @@ import { FaSeedling } from "react-icons/fa";
 import { FaUserPlus } from "react-icons/fa6"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
+import LandStatsCard from "./_components/LandStatsCard"
+import ForumStatsCard from "./_components/ForumStatsCard"
+import CropPlansCard from "./_components/CropPlansCard"
 import EditProfileDialog from "./_components/editprofile"
 import Image from "next/image";
 import { getUserFromStorage } from "@/lib/auth"
+import "./_components/ProfileStyles.css"
 
 export default function ProfilePage() {
   const router = useRouter()
@@ -470,81 +474,19 @@ export default function ProfilePage() {
       </div>
 
       {/* Stats Cards  */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Land Statistics */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg shadow-sm">
-              <FiMap className="h-5 w-5 text-green-600 dark:text-green-400" />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Land Stats</h3>
-          </div>
-          
-          <div className="space-y-3">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="text-center p-3 bg-green-50 dark:bg-green-900/20 rounded-lg shadow-sm">
-                <p className="text-2xl font-bold text-green-600">{user.landStats?.totalLands || 0}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Properties</p>
-              </div>
-              
-              <div className="text-center p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg shadow-sm">
-                <FiLayers className="mx-auto mb-1 h-4 w-4 text-blue-600" />
-                <p className="text-xl font-bold text-blue-600">{user.landStats?.totalArea || "0.0"}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">Total Area (acres)</p>
-              </div>
-            </div>
-          </div>
+      <div className="space-y-6">
+        {/* Top Row - Land and Forum Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Land Statistics */}
+          <LandStatsCard userId={params.id} isOwnProfile={isOwnProfile} />
+
+          {/* Forum Statistics */}
+          <ForumStatsCard userId={params.id} isOwnProfile={isOwnProfile} />
         </div>
 
-        {/* Forum Statistics */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg shadow-sm">
-              <FiMessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Forum Stats</h3>
-          </div>
-          
-          <div className="text-center py-6">
-            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm">
-              <FiMessageSquare className="h-6 w-6 text-gray-400" />
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Will be added later</p>
-          </div>
-        </div>
-
-        {/* Current Season Crop */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-orange-100 dark:bg-orange-900 rounded-lg shadow-sm">
-              <FaSeedling className="h-5 w-5 text-orange-600 dark:text-orange-400" />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Current Season Crops</h3>
-          </div>
-          
-          <div className="text-center py-6">
-            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm">
-              <FaSeedling className="h-6 w-6 text-gray-400" />
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Will be added later</p>
-          </div>
-        </div>
-
-        {/* Productivity Statistics - New Stats Card */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-gray-200 dark:border-slate-700 shadow-md dark:shadow-xl">
-          <div className="flex items-center gap-3 mb-4">
-            <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg shadow-sm">
-              <FiTrendingUp className="h-5 w-5 text-purple-600 dark:text-purple-400" />
-            </div>
-            <h3 className="font-semibold text-gray-900 dark:text-white">Productivity Stats</h3>
-          </div>
-          
-          <div className="text-center py-6">
-            <div className="w-12 h-12 mx-auto mb-3 bg-gray-100 dark:bg-slate-700 rounded-full flex items-center justify-center shadow-sm">
-              <FiTrendingUp className="h-6 w-6 text-gray-400" />
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">Will be added later</p>
-          </div>
+        {/* Bottom Row - Crop Plans Full Width */}
+        <div className="w-full">
+          <CropPlansCard userId={params.id} isOwnProfile={isOwnProfile} />
         </div>
       </div>
 

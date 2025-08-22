@@ -2,14 +2,15 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { Input } from "@/components/ui/input"
+import { motion } from "framer-motion"
 import { useToast } from "@/components/ui/use-toast"
-import { FiCheck, FiSearch, FiUserPlus, FiUsers, FiX } from "react-icons/fi"
+import { FiUsers, FiUserCheck, FiUserPlus, FiSearch } from "react-icons/fi"
+
+
+import ConnectionsTab from "./_components/ConnectionsTab"
+import RequestsTab from "./_components/RequestsTab"
+import SentTab from "./_components/SentTab"
+import DiscoverTab from "./_components/DiscoverTab"
 
 export default function NetworkPage() {
   const router = useRouter()
@@ -21,6 +22,30 @@ export default function NetworkPage() {
   const [searchQuery, setSearchQuery] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
+
+  // Tab configuration
+  const tabs = [
+    { 
+      id: "connections", 
+      label: `My Network (${connections.length})`, 
+      icon: FiUsers 
+    },
+    { 
+      id: "requests", 
+      label: `Requests (${pendingRequests.length})`, 
+      icon: FiUserCheck 
+    },
+    { 
+      id: "sent", 
+      label: `Sent (${sentRequests.length})`, 
+      icon: FiUserPlus 
+    },
+    { 
+      id: "discover", 
+      label: "Discover", 
+      icon: FiSearch 
+    }
+  ]
 
   useEffect(() => {
     fetchConnections()
@@ -163,45 +188,33 @@ export default function NetworkPage() {
 
       const data = await response.json()
       if (data.success) {
-        toast({
-          title: "Success",
-          description: "Connection removed successfully",
-        })
         fetchConnections()
+        return { success: true }
       } else {
         throw new Error(data.message)
       }
     } catch (error) {
       console.error("Error removing connection:", error)
-      toast({
-        title: "Error",
-        description: error.message || "Failed to remove connection",
-        variant: "destructive",
-      })
+      throw error
     }
   }
 
   const removeConnectionByUserId = async (userId) => {
     try {
-      // First find the connection ID
       const connection = connections.find(conn => 
         conn.friend_info.id === userId
       )
       
       if (connection) {
         await removeConnection(connection.id)
-        // Refresh search results to update button state
         if (searchQuery) {
           searchUsers(searchQuery)
         }
+        return { success: true }
       }
     } catch (error) {
       console.error("Error removing connection by user ID:", error)
-      toast({
-        title: "Error",
-        description: "Failed to remove connection",
-        variant: "destructive",
-      })
+      throw error
     }
   }
 
@@ -275,386 +288,95 @@ export default function NetworkPage() {
   }
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-3xl font-bold">Network</h1>
-          <p className="text-muted-foreground">
-            Manage your connections and discover new farmers
+    <div className="min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="bg-blue-100 dark:bg-blue-900/30 rounded-full p-4 w-20 h-20 mx-auto mb-4 flex items-center justify-center">
+            <FiUsers className="h-10 w-10 text-blue-600 dark:text-blue-400" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Network</h1>
+          <p className="text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            Connect with fellow farmers, build your agricultural network, and grow together in the farming community
           </p>
         </div>
-        <div className="flex items-center space-x-2">
-          <FiUsers className="h-8 w-8 text-primary" />
+
+        {/*  Navigation */}
+        <div className="flex justify-center mb-8">
+          <div className="relative w-full sm:w-[80%] lg:w-[60%] flex space-x-1 bg-gray-200 dark:bg-gray-800 rounded-full p-1">
+            <motion.div
+              className="absolute top-1 bottom-1 bg-white dark:bg-gray-700 rounded-full shadow-sm"
+              initial={false}
+              animate={{
+                x: `${tabs.findIndex((tab) => tab.id === activeTab) * 98}%`,
+              }}
+              transition={{
+                type: "spring",
+                stiffness: 300,
+                damping: 30,
+              }}
+              style={{ width: `calc(100% / ${tabs.length})` }}
+            />
+            {tabs.map((tab) => {
+              const IconComponent = tab.icon
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`relative z-10 flex-1 px-4 py-3 rounded-full text-sm font-medium transition-colors flex items-center justify-center space-x-2 ${
+                    activeTab === tab.id
+                      ? "text-gray-900 dark:text-white"
+                      : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  }`}
+                >
+                  <IconComponent className="h-4 w-4" />
+                  <span className="hidden sm:inline">{tab.label}</span>
+                  <span className="sm:hidden">{tab.label.split(' ')[0]}</span>
+                </button>
+              )
+            })}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className=" p-6">
+          {activeTab === "connections" && (
+            <ConnectionsTab
+              connections={connections}
+              removeConnection={removeConnection}
+              toast={toast}
+            />
+          )}
+          
+          {activeTab === "requests" && (
+            <RequestsTab
+              pendingRequests={pendingRequests}
+              respondToRequest={respondToRequest}
+            />
+          )}
+          
+          {activeTab === "sent" && (
+            <SentTab
+              sentRequests={sentRequests}
+              cancelConnectionRequest={cancelConnectionRequest}
+            />
+          )}
+          
+          {activeTab === "discover" && (
+            <DiscoverTab
+              searchQuery={searchQuery}
+              handleSearchChange={handleSearchChange}
+              searchResults={searchResults}
+              isLoading={isLoading}
+              sendConnectionRequest={sendConnectionRequest}
+              removeConnectionByUserId={removeConnectionByUserId}
+              cancelConnectionRequest={cancelConnectionRequest}
+              respondToRequestByUserId={respondToRequestByUserId}
+              toast={toast}
+            />
+          )}
         </div>
       </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="connections">
-            My Network ({connections.length})
-          </TabsTrigger>
-          <TabsTrigger value="requests">
-            Requests ({pendingRequests.length})
-          </TabsTrigger>
-          <TabsTrigger value="sent">
-            Sent ({sentRequests.length})
-          </TabsTrigger>
-          <TabsTrigger value="discover">Discover</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="connections" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Connections</CardTitle>
-              <CardDescription>
-                Farmers and agricultural professionals in your network
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {connections.length === 0 ? (
-                <div className="text-center py-8">
-                  <FiUsers className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No connections yet</h3>
-                  <p className="text-muted-foreground">
-                    Start building your network by discovering and connecting with other farmers
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {connections.map((connection) => (
-                    <Card key={connection.connection_id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-center space-x-4">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={connection.friend_info.profile_pic} alt={connection.friend_info.name} />
-                            <AvatarFallback>
-                              {connection.friend_info.name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h4 
-                              className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                              onClick={() => router.push(`/profile/${connection.friend_info.id}`)}
-                            >
-                              {connection.friend_info.name}
-                            </h4>
-                            <p className="text-sm text-muted-foreground truncate">
-                              {connection.friend_info.phone || 'No phone provided'}
-                            </p>
-                            {(connection.friend_info.area || connection.friend_info.city) && (
-                              <p className="text-xs text-muted-foreground">
-                                📍 {[connection.friend_info.area, connection.friend_info.city, connection.friend_info.country].filter(Boolean).join(", ")}
-                              </p>
-                            )}
-                          </div>
-                        </div>
-                        <div className="mt-4 flex space-x-2">
-                          <Button 
-                            size="sm" 
-                            className="flex-1"
-                            onClick={() => router.push(`/messages?user=${connection.friend_info.id}`)}
-                          >
-                            Message
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="outline" 
-                            className="flex-1"
-                            onClick={() => router.push(`/profile/${connection.friend_info.id}`)}
-                          >
-                            View Profile
-                          </Button>
-                          <Button 
-                            size="sm" 
-                            variant="destructive" 
-                            className="flex-1"
-                            onClick={() => removeConnection(connection.id)}
-                          >
-                            Remove
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="requests" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Pending Requests</CardTitle>
-              <CardDescription>
-                Connection requests waiting for your response
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {pendingRequests.length === 0 ? (
-                <div className="text-center py-8">
-                  <FiUserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No pending requests</h3>
-                  <p className="text-muted-foreground">
-                    You'll see connection requests from other farmers here
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {pendingRequests.map((request) => (
-                    <Card key={request.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={request.other_user_profile_pic} alt={request.other_user_name} />
-                              <AvatarFallback>
-                                {request.other_user_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 
-                                className="font-medium cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => router.push(`/profile/${request.other_user_id}`)}
-                              >
-                                {request.other_user_name}
-                              </h4>
-                              <p className="text-sm text-muted-foreground">{request.other_user_area || 'No area specified'}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Sent {new Date(request.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex space-x-2">
-                            <Button
-                              size="sm"
-                              onClick={() => respondToRequest(request.id, "accept")}
-                              className="bg-green-600 hover:bg-green-700"
-                            >
-                              <FiCheck className="h-4 w-4 mr-1" />
-                              Accept
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              onClick={() => respondToRequest(request.id, "reject")}
-                              className="border-red-200 text-red-600 hover:bg-red-50"
-                            >
-                              <FiX className="h-4 w-4 mr-1" />
-                              Decline
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="sent" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Sent Requests</CardTitle>
-              <CardDescription>
-                Connection requests you've sent to other farmers
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {sentRequests.length === 0 ? (
-                <div className="text-center py-8">
-                  <FiUserPlus className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                  <h3 className="text-lg font-medium">No sent requests</h3>
-                  <p className="text-muted-foreground">
-                    Requests you send will appear here
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {sentRequests.map((request) => (
-                    <Card key={request.id} className="hover:shadow-md transition-shadow">
-                      <CardContent className="p-6">
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center space-x-4">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={request.other_user_profile_pic} alt={request.other_user_name} />
-                              <AvatarFallback>
-                                {request.other_user_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div>
-                              <h4 
-                                className="font-medium cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => router.push(`/profile/${request.other_user_id}`)}
-                              >
-                                {request.other_user_name}
-                              </h4>
-                              <p className="text-sm text-muted-foreground">{request.other_user_area || 'No area specified'}</p>
-                              <p className="text-xs text-muted-foreground">
-                                Sent {new Date(request.created_at).toLocaleDateString()}
-                              </p>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <Badge variant="secondary">Pending</Badge>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              onClick={() => cancelConnectionRequest(request.other_user_id)}
-                            >
-                              Cancel
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="discover" className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>Discover Farmers</CardTitle>
-              <CardDescription>
-                Find and connect with other farmers and agricultural professionals
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div className="relative">
-                  <FiSearch className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name, email, or location..."
-                    value={searchQuery}
-                    onChange={handleSearchChange}
-                    className="pl-10"
-                  />
-                </div>
-
-                {isLoading && (
-                  <div className="text-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
-                    <p className="text-muted-foreground mt-2">Searching...</p>
-                  </div>
-                )}
-
-                {!isLoading && searchResults.length === 0 && searchQuery && (
-                  <div className="text-center py-8">
-                    <FiSearch className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium">No results found</h3>
-                    <p className="text-muted-foreground">
-                      Try searching with different keywords
-                    </p>
-                  </div>
-                )}
-
-                {!isLoading && searchResults.length === 0 && !searchQuery && (
-                  <div className="text-center py-8">
-                    <FiSearch className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <h3 className="text-lg font-medium">Search for farmers</h3>
-                    <p className="text-muted-foreground">
-                      Use the search bar above to find other farmers and agricultural professionals
-                    </p>
-                  </div>
-                )}
-
-                {searchResults.length > 0 && (
-                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {searchResults.map((user) => (
-                      <Card key={user.user_id} className="hover:shadow-md transition-shadow">
-                        <CardContent className="p-6">
-                          <div className="flex items-center space-x-4">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage src={user.profile_image} alt={user.full_name} />
-                              <AvatarFallback>
-                                {user.full_name?.split(' ').map(n => n[0]).join('').toUpperCase()}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <h4 
-                                className="font-medium truncate cursor-pointer hover:text-primary transition-colors"
-                                onClick={() => router.push(`/profile/${user.user_id}`)}
-                              >
-                                {user.full_name}
-                              </h4>
-                              <p className="text-sm text-muted-foreground truncate">
-                                {user.email}
-                              </p>
-                              {user.location && (
-                                <p className="text-xs text-muted-foreground">
-                                  📍 {user.location}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="mt-4">
-                            {user.is_connected ? (
-                              <Button 
-                                size="sm" 
-                                variant="destructive"
-                                className="w-full"
-                                onClick={() => {
-                                  // Find the connection ID and remove it
-                                  // We need to get the connection ID first
-                                  removeConnectionByUserId(user.user_id)
-                                }}
-                              >
-                                Remove Connection
-                              </Button>
-                            ) : user.request_sent ? (
-                              <Button 
-                                size="sm" 
-                                variant="outline"
-                                className="w-full"
-                                onClick={() => cancelConnectionRequest(user.user_id)}
-                              >
-                                Cancel Request
-                              </Button>
-                            ) : user.request_received ? (
-                              <div className="space-y-2">
-                                <Button 
-                                  size="sm" 
-                                  className="w-full"
-                                  onClick={() => respondToRequestByUserId(user.user_id, "accept")}
-                                >
-                                  Accept Request
-                                </Button>
-                                <Button 
-                                  size="sm" 
-                                  variant="outline"
-                                  className="w-full"
-                                  onClick={() => respondToRequestByUserId(user.user_id, "reject")}
-                                >
-                                  Decline Request
-                                </Button>
-                              </div>
-                            ) : (
-                              <Button 
-                                size="sm" 
-                                className="w-full"
-                                onClick={() => sendConnectionRequest(user.user_id)}
-                              >
-                                <FiUserPlus className="h-4 w-4 mr-1" />
-                                Connect
-                              </Button>
-                            )}
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
     </div>
   )
 }

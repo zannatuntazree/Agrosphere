@@ -51,8 +51,9 @@ export async function DELETE(request, { params }) {
     }
 
     const { id } = await params
+    const userId = authToken // The auth token is the user ID
 
-    const result = await userConnectionController.removeConnection(authToken, id)
+    const result = await userConnectionController.removeConnection(userId, id)
 
     if (!result.success) {
       return NextResponse.json({ success: false, message: result.message }, { status: 400 })

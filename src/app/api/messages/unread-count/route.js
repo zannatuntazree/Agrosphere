@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server"
 import { messageController } from "@/backend/controllers/messageController.js"
 
-// Get messages for a conversation
-export async function GET(request, { params }) {
+// Get unread message count for the user
+export async function GET(request) {
   try {
     const authToken = request.cookies.get("auth-token")?.value
     
@@ -11,19 +11,13 @@ export async function GET(request, { params }) {
     }
 
     const userId = authToken // Auth token is just the user ID
-    const { conversationId } = await params
-    
-    const { searchParams } = new URL(request.url)
-    const page = parseInt(searchParams.get("page") || "1")
-    const limit = parseInt(searchParams.get("limit") || "50")
 
-    const result = await messageController.getConversationMessages(userId, conversationId, page, limit)
+    const result = await messageController.getUnreadMessageCount(userId)
 
     return NextResponse.json(
       { 
         success: result.success, 
-        messages: result.data,
-        pagination: result.pagination,
+        unread_count: result.data?.unread_count,
         message: result.message,
         error: result.error 
       }, 
@@ -31,7 +25,7 @@ export async function GET(request, { params }) {
     )
 
   } catch (error) {
-    console.error("Get messages API error:", error)
+    console.error("Get unread count API error:", error)
     return NextResponse.json(
       {
         success: false,

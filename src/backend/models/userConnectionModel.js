@@ -277,6 +277,7 @@ export const userConnectionModel = {
     
     // Transform the result to match the expected structure
     return result.map(row => ({
+      id: row.connection_id, // Add this for remove functionality
       connection_id: row.connection_id,
       connected_since: row.connected_since,
       friend_info: {

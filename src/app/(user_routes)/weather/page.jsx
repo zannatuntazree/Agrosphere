@@ -5,54 +5,42 @@ import { motion } from "motion/react"
 import { useEffect, useState } from "react"
 import { FiCloud, FiCloudRain, FiDroplet, FiEye, FiRefreshCw, FiSun, FiWind } from "react-icons/fi"
 
-// Mock weather data for demonstration
-const mockWeatherData = {
-  current: {
-    location: "Dhaka, Bangladesh",
-    temperature: 28,
-    condition: "Partly Cloudy",
-    humidity: 65,
-    windSpeed: 12,
-    visibility: 10,
-    uvIndex: 6,
-    icon: "partly-cloudy"
-  },
-  forecast: [
-    { day: "Today", high: 32, low: 25, condition: "Partly Cloudy", icon: "partly-cloudy", precipitation: 10 },
-    { day: "Tomorrow", high: 30, low: 24, condition: "Sunny", icon: "sunny", precipitation: 0 },
-    { day: "Wednesday", high: 28, low: 22, condition: "Rain", icon: "rainy", precipitation: 80 },
-    { day: "Thursday", high: 26, low: 20, condition: "Thunderstorm", icon: "thunderstorm", precipitation: 90 },
-    { day: "Friday", high: 29, low: 23, condition: "Cloudy", icon: "cloudy", precipitation: 20 }
-  ],
-  farmingRecommendations: [
-    {
-      title: "Good time for planting",
-      description: "Current soil moisture levels are ideal for rice planting",
-      type: "positive"
-    },
-    {
-      title: "Rain expected midweek",
-      description: "Postpone fertilizer application until Friday",
-      type: "warning"
-    },
-    {
-      title: "Monitor pest activity",
-      description: "High humidity may increase pest activity. Check crops regularly",
-      type: "info"
-    }
-  ]
-}
-
+// Map weatherbit.io icon codes to React icons
 const weatherIcons = {
-  "sunny": FiSun,
-  "partly-cloudy": FiCloud,
-  "cloudy": FiCloud,
-  "rainy": FiCloudRain,
-  "thunderstorm": FiCloudRain
+  "t01d": FiCloudRain, "t01n": FiCloudRain, // Thunderstorm with light rain
+  "t02d": FiCloudRain, "t02n": FiCloudRain, // Thunderstorm with rain
+  "t03d": FiCloudRain, "t03n": FiCloudRain, // Thunderstorm with heavy rain
+  "t04d": FiCloudRain, "t04n": FiCloudRain, // Thunderstorm with light drizzle
+  "t05d": FiCloudRain, "t05n": FiCloudRain, // Thunderstorm with drizzle
+  "d01d": FiCloudRain, "d01n": FiCloudRain, // Light drizzle
+  "d02d": FiCloudRain, "d02n": FiCloudRain, // Drizzle
+  "d03d": FiCloudRain, "d03n": FiCloudRain, // Heavy drizzle
+  "r01d": FiCloudRain, "r01n": FiCloudRain, // Light rain
+  "r02d": FiCloudRain, "r02n": FiCloudRain, // Moderate rain
+  "r03d": FiCloudRain, "r03n": FiCloudRain, // Heavy rain
+  "r04d": FiCloudRain, "r04n": FiCloudRain, // Freezing rain
+  "r05d": FiCloudRain, "r05n": FiCloudRain, // Light shower rain
+  "r06d": FiCloudRain, "r06n": FiCloudRain, // Shower rain
+  "s01d": FiCloud, "s01n": FiCloud, // Light snow
+  "s02d": FiCloud, "s02n": FiCloud, // Snow
+  "s03d": FiCloud, "s03n": FiCloud, // Heavy snow
+  "s04d": FiCloud, "s04n": FiCloud, // Mix snow/rain
+  "s05d": FiCloud, "s05n": FiCloud, // Sleet
+  "s06d": FiCloud, "s06n": FiCloud, // Freezing drizzle
+  "a01d": FiCloud, "a01n": FiCloud, // Mist
+  "a02d": FiCloud, "a02n": FiCloud, // Smoke
+  "a03d": FiCloud, "a03n": FiCloud, // Haze
+  "a04d": FiWind, "a04n": FiWind, // Sand/dust
+  "a05d": FiCloud, "a05n": FiCloud, // Fog
+  "a06d": FiCloud, "a06n": FiCloud, // Freezing fog
+  "c01d": FiSun, "c01n": FiSun, // Clear sky
+  "c02d": FiCloud, "c02n": FiCloud, // Few clouds
+  "c03d": FiCloud, "c03n": FiCloud, // Scattered clouds
+  "c04d": FiCloud, "c04n": FiCloud, // Broken clouds
 }
 
-const getWeatherIcon = (iconType) => {
-  return weatherIcons[iconType] || FiCloud
+const getWeatherIcon = (iconCode) => {
+  return weatherIcons[iconCode] || FiCloud
 }
 
 const getRecommendationColor = (type) => {
@@ -85,20 +73,46 @@ export default function WeatherPage() {
 
   const fetchWeatherData = async () => {
     setIsLoading(true)
+    setError(null)
+    
     try {
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Get user data from localStorage
+      const userData = localStorage.getItem('user')
       
-      // In a real implementation, you would call a weather API here
-      // const response = await fetch('/api/weather')
-      // const data = await response.json()
-      
-      setWeatherData(mockWeatherData)
+      if (!userData) {
+        throw new Error("Please login to view weather data")
+      }
+
+      const user = JSON.parse(userData)
+      const { city, country } = user
+
+      if (!city) {
+        throw new Error("Location not found in user profile. Please update your profile with location information.")
+      }
+
+      // Call the weather API
+      const response = await fetch('/api/weather', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          city: city,
+          country: country || ""
+        })
+      })
+
+      const result = await response.json()
+
+      if (!result.success) {
+        throw new Error(result.message || "Failed to fetch weather data")
+      }
+
+      setWeatherData(result.data)
       setLastUpdated(new Date())
-      setError(null)
     } catch (error) {
       console.error("Error fetching weather data:", error)
-      setError("Failed to fetch weather data")
+      setError(error.message)
     } finally {
       setIsLoading(false)
     }
@@ -194,8 +208,8 @@ export default function WeatherPage() {
 
       {/* Current Weather */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0}}
+        animate={{ opacity: 1 }}
         className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-900/30 dark:to-indigo-900/30 rounded-xl p-8 border border-blue-200 dark:border-blue-800"
       >
         <div className="flex items-center justify-between mb-6">
@@ -249,8 +263,8 @@ export default function WeatherPage() {
           {weatherData.forecast.map((day, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: index * 0.1 }}
               className="bg-white dark:bg-gray-800 rounded-xl p-6 border border-gray-200 dark:border-gray-700 text-center hover:shadow-lg transition-shadow"
             >
@@ -281,43 +295,27 @@ export default function WeatherPage() {
 
       {/* Farming Recommendations */}
       <div>
-        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Farming Recommendations</h3>
+        <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Farming Tips</h3>
         <div className="space-y-4">
-          {weatherData.farmingRecommendations.map((recommendation, index) => (
+          {weatherData.farmingTips.map((tip, index) => (
             <motion.div
               key={index}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: index * 0.1 }}
-              className={`rounded-xl p-6 border ${getRecommendationColor(recommendation.type)}`}
+              className={`rounded-xl p-6 border ${getRecommendationColor(tip.type)}`}
             >
-              <h4 className={`font-semibold mb-2 ${getRecommendationTextColor(recommendation.type)}`}>
-                {recommendation.title}
+              <h4 className={`font-semibold mb-2 ${getRecommendationTextColor(tip.type)}`}>
+                {tip.title}
               </h4>
-              <p className={`${getRecommendationTextColor(recommendation.type)} opacity-90`}>
-                {recommendation.description}
+              <p className={`${getRecommendationTextColor(tip.type)} opacity-90`}>
+                {tip.description}
               </p>
             </motion.div>
           ))}
         </div>
       </div>
 
-      {/* Integration Notice */}
-      <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-6">
-        <div className="flex items-start gap-3">
-          <FiCloud className="h-6 w-6 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <h4 className="font-semibold text-yellow-800 dark:text-yellow-200 mb-2">
-              Demo Weather Data
-            </h4>
-            <p className="text-yellow-700 dark:text-yellow-300">
-              This page shows demo weather data. In production, this would integrate with weather APIs like 
-              OpenWeatherMap, AccuWeather, or local meteorological services to provide real-time weather 
-              information and farming-specific alerts.
-            </p>
-          </div>
-        </div>
-      </div>
     </div>
   )
 }
