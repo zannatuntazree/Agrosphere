@@ -224,3 +224,117 @@ CREATE INDEX idx_AIchats_user_id ON AIchats(user_id);
 CREATE INDEX idx_AIchats_created_at ON AIchats(created_at);
 CREATE INDEX idx_AImessages_chat_id ON AImessages(chat_id);
 CREATE INDEX idx_AImessages_timestamp ON AImessages(timestamp);
+
+
+-- Forum Tables Migration
+-- Run this to add forum functionality
+
+-- =========================
+-- Forum Posts
+-- =========================
+CREATE TABLE forum_posts (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  title TEXT NOT NULL,
+  content TEXT NOT NULL,
+  flair TEXT,               -- e.g., 'Question', 'Discussion', 'Tips', 'News'
+  area TEXT,
+  city TEXT,
+  images TEXT[],            -- Array of Cloudinary URLs for uploaded images
+  views_count INTEGER DEFAULT 0,
+  comments_count INTEGER DEFAULT 0,
+  votes_count INTEGER DEFAULT 0,
+  last_activity TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Indexes for faster filtering and sorting
+CREATE INDEX idx_posts_area_city ON forum_posts(area, city);
+CREATE INDEX idx_posts_flair ON forum_posts(flair);
+CREATE INDEX idx_posts_last_activity ON forum_posts(last_activity DESC);
+
+-- =========================
+-- Comments (flat, no replies)
+-- =========================
+CREATE TABLE forum_comments (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  post_id TEXT NOT NULL REFERENCES forum_posts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Index for fetching comments by post quickly
+CREATE INDEX idx_comments_post_id ON forum_comments(post_id);
+
+-- =========================
+-- Votes (only for posts)
+-- =========================
+CREATE TABLE forum_votes (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  post_id TEXT NOT NULL REFERENCES forum_posts(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  vote_type SMALLINT NOT NULL CHECK (vote_type IN (1, -1)), -- 1 = upvote, -1 = downvote
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE (user_id, post_id) -- prevent duplicate votes
+);
+
+-- Index to quickly sum votes per post
+CREATE INDEX idx_votes_post_id ON forum_votes(post_id);
+
+
+-- Create messaging system tables
+
+-- Create conversations table
+CREATE TABLE conversations (
+  conversation_id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create conversation participants table (many-to-many relationship)
+CREATE TABLE conversation_participants (
+  conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  joined_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (conversation_id, user_id)
+);
+
+-- Create messages table
+CREATE TABLE messages (
+  message_id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  conversation_id TEXT NOT NULL REFERENCES conversations(conversation_id) ON DELETE CASCADE,
+  sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  content TEXT NOT NULL,
+  is_read BOOLEAN DEFAULT FALSE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for better performance
+CREATE INDEX idx_conversations_last_message_at ON conversations(last_message_at);
+CREATE INDEX idx_conversation_participants_user_id ON conversation_participants(user_id);
+CREATE INDEX idx_conversation_participants_conversation_id ON conversation_participants(conversation_id);
+CREATE INDEX idx_messages_conversation_id ON messages(conversation_id);
+CREATE INDEX idx_messages_sender_id ON messages(sender_id);
+CREATE INDEX idx_messages_created_at ON messages(created_at);
+CREATE INDEX idx_messages_is_read ON messages(is_read);
+
+-- Update user_connection_requests table name to match what we're using in the API
+-- This assumes the existing table is called 'user_connections' but we need 'user_connection_requests'
+-- If the table doesn't exist yet, create it
+CREATE TABLE IF NOT EXISTS user_connection_requests (
+  request_id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  sender_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  receiver_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  status TEXT CHECK (status IN ('pending', 'accepted', 'rejected')) DEFAULT 'pending',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  UNIQUE(sender_id, receiver_id)
+);
+
+-- Create indexes for user connection requests
+CREATE INDEX IF NOT EXISTS idx_user_connection_requests_sender ON user_connection_requests(sender_id);
+CREATE INDEX IF NOT EXISTS idx_user_connection_requests_receiver ON user_connection_requests(receiver_id);
+CREATE INDEX IF NOT EXISTS idx_user_connection_requests_status ON user_connection_requests(status);
+

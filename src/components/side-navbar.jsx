@@ -9,9 +9,10 @@ import { useTheme } from "next-themes"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { FaSeedling } from "react-icons/fa"
 import { FiBell,  FiDollarSign, FiHome, FiLogOut, FiMap, FiMapPin, FiMessageSquare, FiMoon, FiShoppingCart, FiSun, FiUser, FiUsers, FiX } from "react-icons/fi"
 import { TbMessageChatbot } from "react-icons/tb";
+import { RiSeedlingLine } from "react-icons/ri"
+import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2"
 
 const navigationItems = [
   {
@@ -28,6 +29,11 @@ const navigationItems = [
     title: "Network",
     href: "/network",
     icon: FiUsers,
+  },
+  {
+    title: "Forum",
+    href: "/forum",
+    icon: HiOutlineChatBubbleLeftRight,
   },
   {
     title: "Messages",
@@ -57,7 +63,7 @@ const navigationItems = [
   {
     title: "Crop Planning",
     href: "/crop-planning",
-    icon: FaSeedling,
+    icon: RiSeedlingLine,
   },
   // {
   //   title: "Weather",
