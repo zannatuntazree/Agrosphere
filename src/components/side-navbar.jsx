@@ -9,7 +9,7 @@ import { useTheme } from "next-themes"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
-import { FiBell,  FiCloud,  FiDollarSign, FiHome, FiLogOut, FiMap, FiMapPin, FiMessageSquare, FiMoon, FiShoppingCart, FiSun, FiUser, FiUsers, FiX } from "react-icons/fi"
+import { FiBell,  FiCloud,  FiDollarSign, FiHome, FiLogOut, FiMap, FiMapPin, FiMessageSquare, FiMoon, FiShoppingCart, FiSun, FiUser, FiUsers, FiX, FiTool, FiCreditCard } from "react-icons/fi"
 import { TbMessageChatbot } from "react-icons/tb";
 import { RiSeedlingLine } from "react-icons/ri"
 import { HiOutlineChatBubbleLeftRight } from "react-icons/hi2"
@@ -59,6 +59,16 @@ const navigationItems = [
     title: "Marketplace",
     href: "/marketplace",
     icon: FiShoppingCart,
+  },
+  {
+    title: "Equipment Rental",
+    href: "/renting",
+    icon: FiTool,
+  },
+  {
+    title: "Loan Manager",
+    href: "/loan-manager",
+    icon: FiCreditCard,
   },
   {
     title: "Crop Planning",

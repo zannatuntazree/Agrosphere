@@ -338,3 +338,79 @@ CREATE INDEX IF NOT EXISTS idx_user_connection_requests_sender ON user_connectio
 CREATE INDEX IF NOT EXISTS idx_user_connection_requests_receiver ON user_connection_requests(receiver_id);
 CREATE INDEX IF NOT EXISTS idx_user_connection_requests_status ON user_connection_requests(status);
 
+
+-- Create loans table
+CREATE TABLE loans (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  loan_amount NUMERIC(12,2) NOT NULL,       -- Total loan taken
+  paid_amount NUMERIC(12,2) DEFAULT 0,      -- How much has been repaid so far
+  payment_due_date DATE NOT NULL,           -- Final due date
+  status TEXT NOT NULL DEFAULT 'active',    -- active, completed, overdue
+  notes TEXT,                               -- optional details/remarks
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for loans table
+CREATE INDEX idx_loans_user_id ON loans(user_id);
+CREATE INDEX idx_loans_status ON loans(status);
+CREATE INDEX idx_loans_created_at ON loans(created_at);
+CREATE INDEX idx_loans_due_date ON loans(payment_due_date);
+
+
+-- Create loan payments table to track payment history
+CREATE TABLE loan_payments (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  loan_id TEXT NOT NULL REFERENCES loans(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  payment_amount NUMERIC(12,2) NOT NULL,
+  payment_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for loan payments table
+CREATE INDEX idx_loan_payments_loan_id ON loan_payments(loan_id);
+CREATE INDEX idx_loan_payments_user_id ON loan_payments(user_id);
+CREATE INDEX idx_loan_payments_date ON loan_payments(payment_date);
+
+
+-- Equipment posted by users for rent
+CREATE TABLE equipment (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  owner_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  equipment_name TEXT NOT NULL,           -- equipment name/title
+  description TEXT,
+  price_per_day NUMERIC(10,2) NOT NULL,   -- rental price per day
+  max_duration_days INTEGER NOT NULL,     -- maximum rental duration allowed
+  owner_phone TEXT,                       -- redundant copy from users for quick access
+  owner_email TEXT,
+  status TEXT NOT NULL DEFAULT 'available', -- available, rented, removed
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Requests from other users to rent equipment
+CREATE TABLE rental_requests (
+  id TEXT PRIMARY KEY DEFAULT encode(gen_random_bytes(4), 'hex'),
+  equipment_id TEXT NOT NULL REFERENCES equipment(id) ON DELETE CASCADE,
+  requester_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  requester_phone TEXT,
+  requester_email TEXT,
+  price_per_day_requested NUMERIC(10,2) NOT NULL,   -- rental price per day
+  requested_duration_days INTEGER NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending', -- pending, accepted, rejected, cancelled
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create indexes for equipment table
+CREATE INDEX idx_equipment_owner_id ON equipment(owner_id);
+CREATE INDEX idx_equipment_status ON equipment(status);
+CREATE INDEX idx_equipment_created_at ON equipment(created_at);
+
+-- Create indexes for rental_requests table
+CREATE INDEX idx_rental_requests_equipment_id ON rental_requests(equipment_id);
+CREATE INDEX idx_rental_requests_requester_id ON rental_requests(requester_id);
+CREATE INDEX idx_rental_requests_status ON rental_requests(status);
+CREATE INDEX idx_rental_requests_created_at ON rental_requests(created_at);
+
