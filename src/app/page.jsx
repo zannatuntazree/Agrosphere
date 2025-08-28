@@ -3,13 +3,9 @@ import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { GiHolosphere } from "react-icons/gi";
 import { MorphingLoginButton } from "@/app/_components/MorphingLoginButton";
-import { Prosto_One } from "next/font/google";
 
-const prostoOne = Prosto_One({
-  weight: "400",
-  subsets: ["latin"],
-  display: "swap",
-});
+// Using system fonts as fallback due to Google Fonts connectivity issues
+const prostoOne = { className: "font-bold" };
 
 const AgrosphereLanding = () => {
   const [mounted, setMounted] = useState(false);

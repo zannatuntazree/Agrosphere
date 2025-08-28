@@ -95,6 +95,21 @@ export default function SideNavbar({ isOpen, onClose }) {
   useEffect(() => {
     setUserId(getUserIdFromStorage())
     fetchUnreadCount()
+    
+    // Poll for unread count every 30 seconds to keep it updated
+    const interval = setInterval(fetchUnreadCount, 30000)
+    
+    // Listen for notification updates from other components
+    const handleNotificationUpdate = () => {
+      fetchUnreadCount()
+    }
+    
+    window.addEventListener('notificationUpdated', handleNotificationUpdate)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('notificationUpdated', handleNotificationUpdate)
+    }
   }, [])
 
   // Close sidebar on escape key
@@ -150,10 +165,10 @@ export default function SideNavbar({ isOpen, onClose }) {
   }
 
   const handleLinkClick = (href) => {
-    // clicking on notifications, mark as loaded and reset count
+    // Don't reset unread count here - let the actual marking as read handle it
+    // This prevents UI inconsistencies
     if (href === "/notifications") {
       setHasLoadedNotifications(true)
-      setUnreadCount(0)
     }
     onClose()
   }
@@ -232,7 +247,7 @@ export default function SideNavbar({ isOpen, onClose }) {
                   className="h-5 w-5" />
                   {/* Notification dot */}
                   {item.href === "/notifications" && unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse"></div>
                   )}
                 </div>
 
@@ -344,7 +359,7 @@ export default function SideNavbar({ isOpen, onClose }) {
                     className="h-5 w-5" />
                     {/* Notification dot */}
                     {item.href === "/notifications" && unreadCount > 0 && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse"></div>
                     )}
                   </div>
                   <span>{item.title}</span>
