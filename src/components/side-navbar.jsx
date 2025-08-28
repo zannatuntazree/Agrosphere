@@ -247,7 +247,7 @@ export default function SideNavbar({ isOpen, onClose }) {
                   className="h-5 w-5" />
                   {/* Notification dot */}
                   {item.href === "/notifications" && unreadCount > 0 && (
-                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
+                    <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse"></div>
                   )}
                 </div>
 
@@ -359,7 +359,7 @@ export default function SideNavbar({ isOpen, onClose }) {
                     className="h-5 w-5" />
                     {/* Notification dot */}
                     {item.href === "/notifications" && unreadCount > 0 && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background"></div>
+                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-background animate-pulse"></div>
                     )}
                   </div>
                   <span>{item.title}</span>

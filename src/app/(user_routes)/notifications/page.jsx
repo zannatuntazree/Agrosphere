@@ -4,6 +4,7 @@ import { useState, useEffect } from "react"
 import { motion, AnimatePresence } from "motion/react"
 import { FiBell, FiCheck, FiCheckCircle, FiAlertCircle } from "react-icons/fi"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/components/ui/use-toast"
 
 // Notification type emojis
 const notificationEmojis = {
@@ -51,6 +52,8 @@ export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [markingAsRead, setMarkingAsRead] = useState(new Set())
+  const [toastCount, setToastCount] = useState(0) // Track toast count to avoid spam
+  const { toast } = useToast()
 
   useEffect(() => {
     fetchNotifications()
@@ -106,11 +109,30 @@ export default function NotificationsPage() {
         
         // Trigger a custom event to update unread count in sidebar
         window.dispatchEvent(new CustomEvent('notificationUpdated'))
+        
+        // Show toast for first few individual marks to avoid spam
+        if (toastCount < 3) {
+          toast({
+            title: "Notification marked as read",
+            description: "✓ Updated successfully",
+          })
+          setToastCount(prev => prev + 1)
+        }
       } else {
         console.error("Failed to mark notification as read")
+        toast({
+          title: "Error",
+          description: "Failed to mark notification as read",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error marking as read:", error)
+      toast({
+        title: "Error",
+        description: "Network error occurred",
+        variant: "destructive",
+      })
     } finally {
       setMarkingAsRead((prev) => {
         const newSet = new Set(prev)
@@ -128,12 +150,26 @@ export default function NotificationsPage() {
       })
 
       if (response.ok) {
-        setNotifications((prev) => prev.map((notification) => ({ ...notification, is_read: true })))
+        const result = await response.json()
         
-        // Trigger a custom event to update unread count in sidebar
-        window.dispatchEvent(new CustomEvent('notificationUpdated'))
+        if (result.success) {
+          setNotifications((prev) => prev.map((notification) => ({ ...notification, is_read: true })))
+          
+          // Trigger a custom event to update unread count in sidebar
+          window.dispatchEvent(new CustomEvent('notificationUpdated'))
+          
+          toast({
+            title: "Success",
+            description: `All notifications marked as read`,
+          })
+        }
       } else {
         console.error("Failed to mark all notifications as read")
+        toast({
+          title: "Error",
+          description: "Failed to mark all notifications as read",
+          variant: "destructive",
+        })
       }
     } catch (error) {
       console.error("Error marking all as read:", error)
@@ -267,7 +303,7 @@ export default function NotificationsPage() {
 
                   {/* Loading indicator */}
                   {markingAsRead.has(notification.id) && (
-                    <div className="absolute inset-0 bg-white/50 dark:bg-gray-800/50 rounded-lg flex items-center justify-center">
+                    <div className="absolute inset-0 bg-white/80 dark:bg-gray-800/80 rounded-lg flex items-center justify-center backdrop-blur-sm">
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
                     </div>
                   )}
