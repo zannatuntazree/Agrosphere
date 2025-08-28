@@ -1,9 +1,9 @@
-import { Inter } from "next/font/google"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/toaster"
 
-const inter = Inter({ subsets: ["latin"] })
+// Using system fonts as fallback due to Google Fonts connectivity issues
+const inter = { className: "font-sans" }
 
 export const metadata = {
   title: "Agrosphere ",

@@ -5,10 +5,10 @@ import { GiHolosphere } from "react-icons/gi"
 import { FiSun, FiMoon, FiMenu, FiLogOut } from "react-icons/fi"
 import { removeAuthCookies } from "@/lib/auth"
 import { useRouter } from "next/navigation"
-import { Prosto_One } from "next/font/google"
 import { cn } from "@/lib/utils"
 
-const inter = Prosto_One({ subsets: ["latin"] , weight: "400" })
+// Using system fonts as fallback due to Google Fonts connectivity issues
+const inter = { className: "font-bold" }
 
 export default function TopNavbar({ onMenuClick }) {
   const { theme, setTheme } = useTheme()

@@ -95,6 +95,21 @@ export default function SideNavbar({ isOpen, onClose }) {
   useEffect(() => {
     setUserId(getUserIdFromStorage())
     fetchUnreadCount()
+    
+    // Poll for unread count every 30 seconds to keep it updated
+    const interval = setInterval(fetchUnreadCount, 30000)
+    
+    // Listen for notification updates from other components
+    const handleNotificationUpdate = () => {
+      fetchUnreadCount()
+    }
+    
+    window.addEventListener('notificationUpdated', handleNotificationUpdate)
+    
+    return () => {
+      clearInterval(interval)
+      window.removeEventListener('notificationUpdated', handleNotificationUpdate)
+    }
   }, [])
 
   // Close sidebar on escape key
@@ -150,10 +165,10 @@ export default function SideNavbar({ isOpen, onClose }) {
   }
 
   const handleLinkClick = (href) => {
-    // clicking on notifications, mark as loaded and reset count
+    // Don't reset unread count here - let the actual marking as read handle it
+    // This prevents UI inconsistencies
     if (href === "/notifications") {
       setHasLoadedNotifications(true)
-      setUnreadCount(0)
     }
     onClose()
   }

@@ -56,15 +56,8 @@ export default function NotificationsPage() {
     fetchNotifications()
   }, [])
 
-  // Auto mark all as read when page loads
-  useEffect(() => {
-    if (notifications.length > 0) {
-      const unreadNotifications = notifications.filter((n) => !n.is_read)
-      if (unreadNotifications.length > 0) {
-        markAllAsRead()
-      }
-    }
-  }, [notifications])
+  // Don't auto-mark as read - let users control their notification status
+  // This was causing issues where users couldn't see which notifications were new
 
   const fetchNotifications = async () => {
     try {
@@ -110,6 +103,9 @@ export default function NotificationsPage() {
             notification.id === notificationId ? { ...notification, is_read: true } : notification,
           ),
         )
+        
+        // Trigger a custom event to update unread count in sidebar
+        window.dispatchEvent(new CustomEvent('notificationUpdated'))
       } else {
         console.error("Failed to mark notification as read")
       }
@@ -133,6 +129,9 @@ export default function NotificationsPage() {
 
       if (response.ok) {
         setNotifications((prev) => prev.map((notification) => ({ ...notification, is_read: true })))
+        
+        // Trigger a custom event to update unread count in sidebar
+        window.dispatchEvent(new CustomEvent('notificationUpdated'))
       } else {
         console.error("Failed to mark all notifications as read")
       }
