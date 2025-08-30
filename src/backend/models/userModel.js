@@ -53,4 +53,14 @@ export const userModel = {
     `
     return result[0]
   },
+
+  // Get all users with location data for weather alerts
+  async getAllUsersWithLocation() {
+    const result = await sql`
+      SELECT id, city, country 
+      FROM users 
+      WHERE city IS NOT NULL AND city != ''
+    `
+    return result
+  },
 }

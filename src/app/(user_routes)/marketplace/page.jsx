@@ -4,7 +4,7 @@ import { Skeleton } from "@/components/ui/skeleton"
 import { AnimatePresence, motion } from "framer-motion"
 import { useEffect, useState } from "react"
 import {
-  FiAlertTriangle, FiChevronDown, FiClock, FiFlag, FiMail, FiMapPin,
+  FiAlertTriangle, FiChevronDown, FiClock, FiFlag, FiHeart, FiMail, FiMapPin,
   FiMessageSquare, FiPhone, FiPlus, FiSearch, FiShoppingCart, FiUser
 } from "react-icons/fi"
 import CreateListingDialog from "./_components/create-listing-dialog"
@@ -74,9 +74,108 @@ export default function MarketplacePage() {
   const [isReportDialogOpen, setIsReportDialogOpen] = useState(false)
   const [reportingListing, setReportingListing] = useState(null)
 
+  // Favorites state
+  const [favorites, setFavorites] = useState(new Set())
+  const [favoriteLoading, setFavoriteLoading] = useState(new Set())
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false)
+  const [favoriteListings, setFavoriteListings] = useState([])
+
   useEffect(() => {
     fetchListings(true)
+    loadFavoriteStatus()
   }, [])
+
+  // Load favorite status for current user
+  const loadFavoriteStatus = async () => {
+    try {
+      // Get user's favorite listings with full details
+      const response = await fetch('/api/marketplace/favorites', { credentials: 'include' })
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          const favoriteIds = new Set(result.favorites.map(fav => fav.id))
+          setFavorites(favoriteIds)
+          setFavoriteListings(result.favorites)
+        }
+      }
+    } catch (error) {
+      console.error("Error loading favorites:", error)
+    }
+  }
+
+  // Load favorite status for specific listings
+  const loadFavoriteStatusForListings = async (listingsToCheck) => {
+    try {
+      const favoriteChecks = await Promise.all(
+        listingsToCheck.map(async (listing) => {
+          const response = await fetch(`/api/marketplace/favorites/check?listingId=${listing.id}`, { credentials: 'include' })
+          if (response.ok) {
+            const result = await response.json()
+            return { listingId: listing.id, isFavorited: result.isFavorited }
+          }
+          return { listingId: listing.id, isFavorited: false }
+        })
+      )
+      
+      const newFavorites = new Set(favorites)
+      favoriteChecks.forEach(({ listingId, isFavorited }) => {
+        if (isFavorited) {
+          newFavorites.add(listingId)
+        } else {
+          newFavorites.delete(listingId)
+        }
+      })
+      setFavorites(newFavorites)
+    } catch (error) {
+      console.error("Error loading favorite status for listings:", error)
+    }
+  }
+
+  // Toggle favorite status
+  const toggleFavorite = async (listingId) => {
+    const isCurrentlyFavorited = favorites.has(listingId)
+    const newFavoriteLoading = new Set(favoriteLoading)
+    newFavoriteLoading.add(listingId)
+    setFavoriteLoading(newFavoriteLoading)
+    
+    try {
+      let response
+      if (isCurrentlyFavorited) {
+        response = await fetch(`/api/marketplace/favorites?listingId=${listingId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        })
+      } else {
+        response = await fetch('/api/marketplace/favorites', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ listingId }),
+          credentials: 'include'
+        })
+      }
+      
+      if (response.ok) {
+        const newFavorites = new Set(favorites)
+        if (isCurrentlyFavorited) {
+          newFavorites.delete(listingId)
+        } else {
+          newFavorites.add(listingId)
+        }
+        setFavorites(newFavorites)
+        // Reload favorites list to keep it updated
+        await loadFavoriteStatus()
+      } else {
+        // Show error if needed
+        console.error('Failed to toggle favorite')
+      }
+    } catch (error) {
+      console.error('Error toggling favorite:', error)
+    } finally {
+      const newFavoriteLoading = new Set(favoriteLoading)
+      newFavoriteLoading.delete(listingId)
+      setFavoriteLoading(newFavoriteLoading)
+    }
+  }
 
   const fetchListings = async (isInitialLoad = false) => {
     if (!isInitialLoad) setIsSearching(true)
@@ -90,8 +189,13 @@ export default function MarketplacePage() {
       const response = await fetch(`/api/marketplace?${params}`, { credentials: "include" })
       const result = await response.json()
 
-      if (response.ok && result.success) setListings(result.listings || [])
-      else setError(result.message || "Failed to fetch marketplace listings")
+      if (response.ok && result.success) {
+        setListings(result.listings || [])
+        // Load favorite status for the listings if user is authenticated
+        await loadFavoriteStatusForListings(result.listings || [])
+      } else {
+        setError(result.message || "Failed to fetch marketplace listings")
+      }
     } catch (error) {
       console.error("Error fetching listings:", error)
       setError("Network error occurred while fetching listings")
@@ -220,6 +324,17 @@ export default function MarketplacePage() {
             <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Marketplace</h1>
           </div>
           <div className="flex items-center gap-3">
+            <button 
+              onClick={() => setShowFavoritesOnly(!showFavoritesOnly)} 
+              className={`flex items-center justify-center gap-2 px-4 py-2 border rounded-full transition-colors font-medium shadow-sm ${
+                showFavoritesOnly 
+                  ? 'bg-red-50 border-red-200 text-red-700 dark:bg-red-900/20 dark:border-red-800 dark:text-red-300'
+                  : 'bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+            >
+              <FiHeart className={`h-4 w-4 ${showFavoritesOnly ? 'fill-current' : ''}`} />
+              {showFavoritesOnly ? 'Show All' : `My Favorites ${favoriteListings.length > 0 ? `(${favoriteListings.length})` : ''}`}
+            </button>
             <button onClick={() => handleOpenMyListings(true)} className="flex items-center justify-center gap-2 px-4 py-2 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-white rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors font-medium shadow-sm">
               <FiShoppingCart className="h-4 w-4" /> My Listings
             </button>
@@ -286,7 +401,7 @@ export default function MarketplacePage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <AnimatePresence>
-            {!isSearching && listings.map((listing, index) => (
+            {!isSearching && (showFavoritesOnly ? favoriteListings : listings).map((listing, index) => (
               <motion.div
                 key={listing.id}
                 layout
@@ -339,7 +454,19 @@ export default function MarketplacePage() {
                       </Link>
                       <div className="flex items-center gap-1.5 flex-shrink-0"><FiClock /><span>{formatTimeAgo(listing.created_at)}</span></div>
                     </div>
-                    <div className="flex justify-end gap-2 mt-4 ">
+                    <div className="flex gap-2 mt-4 ">
+                      <button 
+                        onClick={() => toggleFavorite(listing.id)}
+                        disabled={favoriteLoading.has(listing.id)}
+                        className={`cursor-pointer flex-shrink-0 flex items-center justify-center px-3 py-2 text-sm transition-all ${
+                          favorites.has(listing.id) 
+                            ? 'text-red-500 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800' 
+                            : 'text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 border border-transparent hover:bg-gray-300 dark:hover:bg-gray-600'
+                        } rounded-full transition-colors ${favoriteLoading.has(listing.id) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                      >
+                        <FiHeart className={`h-4 w-4 mr-1 ${favorites.has(listing.id) ? 'fill-current' : ''}`} />
+                        {favoriteLoading.has(listing.id) ? '...' : (favorites.has(listing.id) ? 'Saved' : 'Save')}
+                      </button>
                       <button 
                         onClick={() => handleOpenReportDialog(listing)}
                         className="cursor-pointer flex-shrink-0 flex items-center justify-center px-3 py-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-200 dark:bg-gray-700 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
@@ -354,14 +481,23 @@ export default function MarketplacePage() {
           </AnimatePresence>
         </div>
 
-        {!isLoading && !isSearching && listings.length === 0 && !error && (
+        {!isLoading && !isSearching && (showFavoritesOnly ? favoriteListings : listings).length === 0 && !error && (
           <div className="text-center py-16 px-6 bg-white dark:bg-gray-800 rounded-lg border border-dashed border-gray-300 dark:border-gray-700 col-span-full">
             <FiShoppingCart className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">No listings found</h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">{searchTerm || locationFilter ? "Try adjusting your search or filter to find what you're looking for." : "There are currently no listings. Why not be the first to sell your crops?"}</p>
-            <button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center justify-center gap-2 mx-auto px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors font-medium shadow-sm">
-              <FiPlus /> Create First Listing
-            </button>
+            <h3 className="text-xl font-medium text-gray-900 dark:text-white mb-2">
+              {showFavoritesOnly ? "No favorites yet" : "No listings found"}
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 max-w-sm mx-auto">
+              {showFavoritesOnly 
+                ? "Start saving listings you're interested in by clicking the heart icon." 
+                : (searchTerm || locationFilter ? "Try adjusting your search or filter to find what you're looking for." : "There are currently no listings. Why not be the first to sell your crops?")
+              }
+            </p>
+            {!showFavoritesOnly && (
+              <button onClick={() => setIsCreateDialogOpen(true)} className="flex items-center justify-center gap-2 mx-auto px-6 py-2 bg-green-600 text-white rounded-full hover:bg-green-700 transition-colors font-medium shadow-sm">
+                <FiPlus /> Create First Listing
+              </button>
+            )}
           </div>
         )}
       </div>

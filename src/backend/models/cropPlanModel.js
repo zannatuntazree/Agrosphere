@@ -197,5 +197,19 @@ export const cropPlanModel = {
       ORDER BY scp.expected_harvest_date ASC
     `
     return result
+  },
+
+  // Get upcoming plantings (next 7 days) for reminder notifications
+  async getUpcomingPlantings(endDate) {
+    const result = await sql`
+      SELECT 
+        scp.id, scp.user_id, scp.crop_name, scp.planting_date, scp.season, scp.status
+      FROM seasonal_crop_plans scp
+      WHERE scp.status = 'planned'
+        AND scp.planting_date IS NOT NULL
+        AND scp.planting_date BETWEEN CURRENT_DATE AND ${endDate}
+      ORDER BY scp.planting_date ASC
+    `
+    return result
   }
 }

@@ -1,4 +1,5 @@
 import { cropPlanModel } from "../models/cropPlanModel.js"
+import { notificationController } from "./notificationController.js"
 
 export const cropPlanController = {
   // Create new crop plan
@@ -228,6 +229,52 @@ export const cropPlanController = {
       }
     } catch (error) {
       console.error("Get seasonal recommendations error:", error)
+      return {
+        success: false,
+        message: error.message
+      }
+    }
+  },
+
+  // Send planting reminders for upcoming crops
+  async sendPlantingReminders() {
+    try {
+      const today = new Date()
+      const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000) // 7 days from now
+
+      // Get all crop plans with planting dates in the next 7 days
+      const upcomingPlants = await cropPlanModel.getUpcomingPlantings(weekFromNow)
+
+      let notificationsSent = 0
+
+      for (const plan of upcomingPlants) {
+        const plantingDate = new Date(plan.planting_date)
+        const daysUntilPlanting = Math.ceil((plantingDate.getTime() - today.getTime()) / (24 * 60 * 60 * 1000))
+        
+        let message = ""
+        if (daysUntilPlanting === 0) {
+          message = `🌱 Today is planting day for your ${plan.crop_name}! Don't forget to plant according to your crop plan.`
+        } else if (daysUntilPlanting === 1) {
+          message = `🌱 Tomorrow is planting day for your ${plan.crop_name}. Make sure you have everything ready!`
+        } else {
+          message = `🌱 Reminder: You have ${daysUntilPlanting} days until planting your ${plan.crop_name}. Start preparing!`
+        }
+
+        await notificationController.createNotificationForUser(
+          plan.user_id,
+          "planting_reminder", 
+          message
+        )
+        notificationsSent++
+      }
+
+      return {
+        success: true,
+        notificationsSent,
+        message: `${notificationsSent} planting reminders sent successfully`
+      }
+    } catch (error) {
+      console.error("Send planting reminders error:", error)
       return {
         success: false,
         message: error.message
