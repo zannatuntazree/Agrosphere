@@ -20,11 +20,45 @@ const notificationEmojis = {
   Connection_Rejected: "❌",
   report: "🚨",
   admin: "👨‍💼",
+  planting_reminder: "🌱",
+  harvest_reminder: "🌾",
+  price_alert: "💰",
+  favorite_update: "❤️",
   default: "🔔",
 }
 
 const getNotificationEmoji = (type) => {
   return notificationEmojis[type] || notificationEmojis.default
+}
+
+// Notification categories for filtering
+const notificationCategories = {
+  all: { label: "All", types: [] },
+  social: { 
+    label: "Social", 
+    types: ["Connection_request", "Connection_Accepted", "Connection_Rejected", "forum", "comment"]
+  },
+  farming: { 
+    label: "Farming", 
+    types: ["planting_reminder", "harvest_reminder", "weather_alert", "farm_update"]
+  },
+  marketplace: { 
+    label: "Marketplace", 
+    types: ["market_update", "price_alert", "favorite_update"]
+  },
+  system: { 
+    label: "System", 
+    types: ["welcome", "system", "admin", "report"]
+  }
+}
+
+const getCategoryFromType = (type) => {
+  for (const [key, category] of Object.entries(notificationCategories)) {
+    if (key !== 'all' && category.types.includes(type)) {
+      return key
+    }
+  }
+  return 'system'
 }
 
 const formatTimeAgo = (dateString) => {
@@ -51,6 +85,7 @@ export default function NotificationsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState(null)
   const [markingAsRead, setMarkingAsRead] = useState(new Set())
+  const [selectedCategory, setSelectedCategory] = useState("all")
 
   useEffect(() => {
     fetchNotifications()
@@ -141,6 +176,13 @@ export default function NotificationsPage() {
     }
   }
 
+  // Filter notifications by category
+  const filteredNotifications = selectedCategory === "all" 
+    ? notifications 
+    : notifications.filter(notification => 
+        notificationCategories[selectedCategory].types.includes(notification.type)
+      )
+
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
   if (isLoading) {
@@ -217,19 +259,46 @@ export default function NotificationsPage() {
         )}
       </div>
 
+      {/* Category Filters */}
+      <div className="flex flex-wrap gap-2 mb-4">
+        {Object.entries(notificationCategories).map(([key, category]) => (
+          <button
+            key={key}
+            onClick={() => setSelectedCategory(key)}
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+              selectedCategory === key
+                ? 'bg-green-600 text-white'
+                : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+            }`}
+          >
+            {category.label}
+            {key !== 'all' && (
+              <span className="ml-1 text-xs opacity-75">
+                ({notifications.filter(n => notificationCategories[key].types.includes(n.type)).length})
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {/* Notifications List */}
       <div className="space-y-3">
-        {notifications.length === 0 ? (
+        {filteredNotifications.length === 0 ? (
           <div className="text-center py-12">
             <FiBell className="h-12 w-12 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">No notifications yet</h3>
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              {selectedCategory === 'all' ? 'No notifications yet' : `No ${notificationCategories[selectedCategory].label.toLowerCase()} notifications`}
+            </h3>
             <p className="text-gray-600 dark:text-gray-400">
-              You'll see notifications here when there's activity on your account
+              {selectedCategory === 'all' 
+                ? "You'll see notifications here when there's activity on your account"
+                : `You have no ${notificationCategories[selectedCategory].label.toLowerCase()} notifications at the moment`
+              }
             </p>
           </div>
         ) : (
           <AnimatePresence>
-            {notifications.map((notification, index) => (
+            {filteredNotifications.map((notification, index) => (
               <motion.div
                 key={notification.id}
                 initial={{ opacity: 0, y: 20 }}

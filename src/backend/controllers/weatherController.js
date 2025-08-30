@@ -1,3 +1,6 @@
+import { notificationController } from "./notificationController.js"
+import { userModel } from "../models/userModel.js"
+
 export const weatherController = {
   async getCurrentWeather(city, country = "") {
     try {
@@ -481,5 +484,118 @@ export const weatherController = {
         message: error.message,
       };
     }
+  },
+
+  // Send weather alerts for severe conditions
+  async checkAndSendWeatherAlerts() {
+    try {
+      // Get all users with location data
+      const users = await userModel.getAllUsersWithLocation()
+      let alertsSent = 0
+
+      for (const user of users) {
+        if (!user.city) continue
+
+        try {
+          // Get current weather for user location
+          const weatherResult = await this.getCurrentWeather(user.city, user.country)
+          
+          if (!weatherResult.success) continue
+
+          const weather = weatherResult.data
+          const alerts = this.checkSevereWeatherConditions(weather)
+
+          // Send alerts for severe conditions
+          for (const alert of alerts) {
+            await notificationController.createNotificationForUser(
+              user.id,
+              "weather_alert",
+              alert.message
+            )
+            alertsSent++
+          }
+        } catch (userWeatherError) {
+          console.error(`Failed to check weather for user ${user.id}:`, userWeatherError)
+          // Continue to next user
+        }
+      }
+
+      return {
+        success: true,
+        alertsSent,
+        message: `${alertsSent} weather alerts sent successfully`
+      }
+    } catch (error) {
+      console.error("Error checking weather alerts:", error)
+      return {
+        success: false,
+        message: error.message
+      }
+    }
+  },
+
+  // Check for severe weather conditions that warrant alerts
+  checkSevereWeatherConditions(weather) {
+    const alerts = []
+    const { temperature, condition, windSpeed, weatherCode, humidity } = weather
+
+    // Temperature-based alerts
+    if (temperature >= 40) {
+      alerts.push({
+        type: "extreme_heat",
+        message: `🌡️ Extreme heat warning! Temperature is ${temperature}°C. Protect crops with shade, increase irrigation, and avoid working during peak hours.`
+      })
+    } else if (temperature <= 2) {
+      alerts.push({
+        type: "frost",
+        message: `❄️ Frost alert! Temperature is ${temperature}°C. Protect sensitive crops with covers and consider heating systems for greenhouses.`
+      })
+    }
+
+    // Wind-based alerts
+    if (windSpeed >= 50) {
+      alerts.push({
+        type: "high_wind",
+        message: `💨 High wind warning! Wind speed is ${windSpeed} km/h. Secure equipment, support tall plants, and avoid spraying pesticides.`
+      })
+    }
+
+    // Weather condition-based alerts
+    if (weatherCode >= 200 && weatherCode <= 233) {
+      // Thunderstorms
+      alerts.push({
+        type: "thunderstorm",
+        message: `⛈️ Severe thunderstorm warning! Secure livestock and equipment. Stay indoors and inspect for hail damage after the storm.`
+      })
+    } else if (weatherCode >= 600 && weatherCode <= 623) {
+      // Snow
+      alerts.push({
+        type: "snow",
+        message: `🌨️ Snow alert! Heavy snow expected. Clear greenhouse roofs, ensure livestock shelter, and prepare for possible power outages.`
+      })
+    } else if (weatherCode >= 700 && weatherCode <= 781) {
+      // Atmospheric conditions (fog, dust, etc.)
+      if (weatherCode === 781) {
+        alerts.push({
+          type: "tornado",
+          message: `🌪️ Tornado warning! Take immediate shelter. Secure all outdoor equipment and livestock immediately.`
+        })
+      }
+    }
+
+    // Humidity-based alerts
+    if (humidity <= 20) {
+      alerts.push({
+        type: "low_humidity",
+        message: `💧 Very low humidity alert (${humidity}%)! Increase irrigation frequency and monitor crops closely for stress signs.`
+      })
+    } else if (humidity >= 90 && temperature >= 25) {
+      alerts.push({
+        type: "high_humidity",
+        message: `🌫️ High humidity warning (${humidity}%)! Monitor for fungal diseases and ensure good air circulation in greenhouses.`
+      })
+    }
+
+    return alerts
   },
 };

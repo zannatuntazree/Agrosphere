@@ -302,6 +302,51 @@ export default function CropPlanningPage() {
     });
   };
 
+  // Calculate days until a date
+  const getDaysUntil = (dateString) => {
+    if (!dateString) return null;
+    const targetDate = new Date(dateString);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    targetDate.setHours(0, 0, 0, 0);
+    
+    const diffTime = targetDate.getTime() - today.getTime();
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Get countdown display text and styling
+  const getCountdownDisplay = (dateString, type) => {
+    const days = getDaysUntil(dateString);
+    if (days === null) return null;
+
+    if (days < 0) {
+      return {
+        text: `${Math.abs(days)} days ago`,
+        color: "text-gray-500",
+        bgColor: "bg-gray-100 dark:bg-gray-700"
+      };
+    } else if (days === 0) {
+      return {
+        text: type === 'planting' ? "Plant today!" : "Harvest today!",
+        color: type === 'planting' ? "text-green-700" : "text-orange-700",
+        bgColor: type === 'planting' ? "bg-green-100 dark:bg-green-900/30" : "bg-orange-100 dark:bg-orange-900/30"
+      };
+    } else if (days <= 7) {
+      return {
+        text: `${days} ${days === 1 ? 'day' : 'days'} left`,
+        color: type === 'planting' ? "text-green-700" : "text-orange-700", 
+        bgColor: type === 'planting' ? "bg-green-100 dark:bg-green-900/30" : "bg-orange-100 dark:bg-orange-900/30"
+      };
+    } else {
+      return {
+        text: `${days} days left`,
+        color: "text-blue-700",
+        bgColor: "bg-blue-100 dark:bg-blue-900/30"
+      };
+    }
+  };
+
   if (isLoading) {
     return <CropPlanningPageSkeleton />;
   }
@@ -555,23 +600,41 @@ export default function CropPlanningPage() {
 
                     <div className="space-y-2 mb-4">
                       {plan.planting_date && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <FiCalendar className="h-4 w-4 text-green-600" />
-                          <span className="text-gray-600 dark:text-gray-400">
-                            Planting:
-                          </span>
-                          <span>{formatDate(plan.planting_date)}</span>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <FiCalendar className="h-4 w-4 text-green-600" />
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Planting:
+                            </span>
+                            <span>{formatDate(plan.planting_date)}</span>
+                          </div>
+                          {getCountdownDisplay(plan.planting_date, 'planting') && (
+                            <div className="ml-6">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCountdownDisplay(plan.planting_date, 'planting').color} ${getCountdownDisplay(plan.planting_date, 'planting').bgColor}`}>
+                                {getCountdownDisplay(plan.planting_date, 'planting').text}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       )}
                       {plan.expected_harvest_date && (
-                        <div className="flex items-center gap-2 text-sm">
-                          <FiCalendar className="h-4 w-4 text-orange-600" />
-                          <span className="text-gray-600 dark:text-gray-400">
-                            Harvest:
-                          </span>
-                          <span>
-                            {formatDate(plan.expected_harvest_date)}
-                          </span>
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2 text-sm">
+                            <FiCalendar className="h-4 w-4 text-orange-600" />
+                            <span className="text-gray-600 dark:text-gray-400">
+                              Harvest:
+                            </span>
+                            <span>
+                              {formatDate(plan.expected_harvest_date)}
+                            </span>
+                          </div>
+                          {getCountdownDisplay(plan.expected_harvest_date, 'harvest') && (
+                            <div className="ml-6">
+                              <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getCountdownDisplay(plan.expected_harvest_date, 'harvest').color} ${getCountdownDisplay(plan.expected_harvest_date, 'harvest').bgColor}`}>
+                                {getCountdownDisplay(plan.expected_harvest_date, 'harvest').text}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>
